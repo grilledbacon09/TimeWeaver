@@ -1,6 +1,5 @@
-package com.example.timeweaver.Navigation
+package com.example.timeweaver.navigation
 
-import android.graphics.drawable.Icon
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -13,7 +12,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.example.timeweaver.Navigation.NavBarItems
 import com.example.timeweaver.R
 
 @OptIn(ExperimentalFoundationApi::class)

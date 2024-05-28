@@ -1,4 +1,4 @@
-package com.example.timeweaver.Navigation
+package com.example.timeweaver.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
