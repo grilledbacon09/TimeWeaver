@@ -1,1 +1,1 @@
-testtext
+https://velog.io/@lifeisbeautiful/Jetpack-Compose-%ED%91%9C-%EB%A7%8C%EB%93%A4%EA%B8%B0
