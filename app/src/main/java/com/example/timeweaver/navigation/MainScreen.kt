@@ -1,4 +1,4 @@
-package com.example.timeweaver.Navigation
+package com.example.timeweaver.navigation
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -14,10 +14,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.timeweaver.Screens.CalendarScreen
-import com.example.timeweaver.Screens.FixedScreen
-import com.example.timeweaver.Screens.MyScreen
-import com.example.timeweaver.Screens.ScheduleScreen
+import com.example.timeweaver.screens.CalendarPlus
+import com.example.timeweaver.screens.CalendarScreen
+import com.example.timeweaver.screens.FixedScreen
+import com.example.timeweaver.screens.MyScreen
+import com.example.timeweaver.screens.ScheduleScreen
 
 @Composable
 fun rememberViewModelStoreOwner(): ViewModelStoreOwner {
@@ -52,6 +53,10 @@ fun Navigate(navController: NavHostController) {
 
                     composable(route = Routes.Calendar.route) {
                         CalendarScreen(navController = navController)
+                    }
+
+                    composable(route = Routes.CalendarPlus.route) {
+                        CalendarPlus(navController = navController)
                     }
 
                     composable(route = Routes.Fixed.route) {

@@ -1,6 +1,6 @@
-package com.example.timeweaver.Screens
+package com.example.timeweaver.screens
 
-data class Task(val name: String, val ID: Int, val importance: Int, val completed: Boolean, val once: Boolean, val deadline: Int, val time: Int)
+data class Task(val name: String, val ID: Int, val importance: Int, var completed: Boolean = false, val once: Boolean, var deadline: Int, var time: Int)
 //name: 이름
 //ID: 모든 할 일 구분하기 위함
 //importance: 중요도
