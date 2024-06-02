@@ -63,6 +63,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.room.common)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.ui.tooling.preview.android)
     kapt(libs.androidx.room.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

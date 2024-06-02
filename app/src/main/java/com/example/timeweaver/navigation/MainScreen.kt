@@ -14,6 +14,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.timeweaver.screens.AddFixedTask
 import com.example.timeweaver.screens.CalendarPlus
 import com.example.timeweaver.screens.CalendarScreen
 import com.example.timeweaver.screens.FixedScreen
@@ -69,6 +70,10 @@ fun Navigate(navController: NavHostController) {
 
                     composable(route = Routes.My.route) {
                         MyScreen(navController = navController)
+                    }
+
+                    composable(route = Routes.AddFixedTask.route){
+                        AddFixedTask(navController = navController)
                     }
                 }
             }

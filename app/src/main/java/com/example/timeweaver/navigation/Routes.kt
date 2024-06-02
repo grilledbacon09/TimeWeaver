@@ -7,6 +7,7 @@ sealed class Routes (val route: String) {
     object Fixed : Routes("Fixed")
     object Schedule : Routes("Schedule")
     object My : Routes("My")
+    object AddFixedTask : Routes("AddFixedTask")
     //Add Task Screen
     //Add Fixed Task Screen
     //Settings Screen
