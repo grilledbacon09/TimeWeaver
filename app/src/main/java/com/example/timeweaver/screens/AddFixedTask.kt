@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -83,8 +84,28 @@ fun AddFixedTask(navController: NavController) {
                 //keyboardActions = KeyboardActions()
             )
         }
-        TimeInput(state = timePickerState)//추후 dropdownmenu로 수정하는 편이 좋을듯?
-        TimeInput(state = timePickerState)//추후 dropdownmenu로 수정하는 편이 좋을듯?
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("시작 시각")
+                TimeInput(state = timePickerState)
+            }
+            Spacer(modifier = Modifier.width(16.dp)) // Adjust the width as needed
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("종료 시각")
+                TimeInput(state = timePickerState)
+            }
+        }
+        //TimeInput(state = timePickerState)//추후 dropdownmenu로 수정하는 편이 좋을듯?
+        //TimeInput(state = timePickerState)//추후 dropdownmenu로 수정하는 편이 좋을듯?
         //OutlinedTextField(value = taskTime,  onValueChange = { taskTime = it }, label = { Text(text = "소요 시간 입력(분)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
         //그냥 시작 시각하고 종료시각 받는 게 더 나을듯?
         Row(
