@@ -5,15 +5,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.timeweaver.navigation.LocalNavGraphViewModelStoreOwner
 import com.example.timeweaver.navigation.NavViewModel
+import com.example.timeweaver.navigation.Routes
 import com.example.timeweaver.roomDB.TodoDatabase
 import com.example.timeweaver.roomDB.TodoEntity
 
@@ -48,15 +52,19 @@ fun CalendarPlus(navController: NavHostController,selectedEntity: TodoEntity?=nu
     var scheduleName by navViewModel.scheduleName//string
     var estimatedTimeH by navViewModel.estimatedTimeH//string
     var estimatedTimeM by navViewModel.estimatedTimeM//string
-    var once by navViewModel.once//boolean
+    //var once by navViewModel.once//boolean
     var importance by navViewModel.importance//string
+    //val once = remember { mutableStateOf(false) }
+//    val onceState = remember { mutableStateOf(TodoEntity.once) }
+   // var onceState by remember { mutableStateOf(selectedEntity?.once ?: false) }
+    var once by remember { mutableStateOf(false) }
 
     val id = itemId.toIntOrNull()?:0
     val timeH = estimatedTimeH.toIntOrNull() ?:0
     val timeM = estimatedTimeH.toIntOrNull()?:0
     val importance1 = importance.toIntOrNull()?:0
 
-    val Entity = TodoEntity(id,scheduleName,timeH,timeM,once,importance1)
+    //val Entity = TodoEntity(id,scheduleName,timeH,timeM,onceState,importance1)
 
     LaunchedEffect(selectedEntity) {
         if (selectedEntity != null) {
@@ -74,7 +82,7 @@ fun CalendarPlus(navController: NavHostController,selectedEntity: TodoEntity?=nu
         var name= ""
         var timeH= ""
         var timeM= ""
-        var once= ""
+        var once= false
         var importance= ""
     }
 
@@ -106,9 +114,20 @@ fun CalendarPlus(navController: NavHostController,selectedEntity: TodoEntity?=nu
         )
         OnceCheckBox(
             checked = once,
-            onCheckedChange = navViewModel.changeTaskChecked()
+            onCheckedChange = {once = it}//navViewModel.changeTaskChecked()
         )
         ImportanceField(value = importance, onValuechange = {importance=it})
+
+        //추가하기 버튼
+        Column (modifier = Modifier.fillMaxWidth().padding(top = 20.dp), horizontalAlignment = Alignment.CenterHorizontally){
+            Button(modifier = Modifier.padding(),
+                onClick = {
+                    navController.navigate(Routes.Calendar.route)
+                }) {
+                Text(text = "추가하기")
+            }
+        }
+
 
     }
 
@@ -171,15 +190,15 @@ fun EditTimeField(value1:String,
 
 @Composable
 fun OnceCheckBox(
-    checked:Boolean,
-    onCheckedChange: Unit,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: NavViewModel = viewModel()
 ) {
     Row (modifier=Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically){
         Text(text = "한번에 끝내야하는 일인가요?")
         Spacer(modifier = Modifier.width(30.dp))
-        Checkbox(checked = checked, onCheckedChange = { onCheckedChange })
+        Checkbox(checked = checked, onCheckedChange = { onCheckedChange(it) })
 
 
     }
@@ -198,6 +217,16 @@ fun ImportanceField(value:String,
             modifier=Modifier
         )
 
+    }
+
+}
+
+@Composable
+fun PlusButton(modifier: Modifier = Modifier,navController: NavHostController) {
+    Button(onClick = {
+        navController.navigate(Routes.Calendar.route)
+    }) {
+        Text(text = "추가하기")
     }
 
 }
