@@ -1,5 +1,6 @@
 package com.example.timeweaver.screens
 
+import android.util.Log
 import android.widget.CalendarView
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
@@ -52,7 +53,14 @@ fun CalendarScreen(navController: NavHostController) {
     var monthState by navViewModel.monthState
     var dayState by navViewModel.dayState
 
-    var list = listOf("모프 제안서","실습보고서 12주차","회의록 제출","코드 개발")
+//    var list = listOf("모프 제안서","실습보고서 12주차","회의록 제출","코드 개발")
+//    val list = navViewModel.tasklist.map { it.name }
+    // 선택한 날짜를 YYYYMMDD 형식의 int 값으로 변환
+    val selectedDateInt = "$yearState${monthState.padStart(2, '0')}${dayState.padStart(2, '0')}".toInt()
+
+    // 선택한 날짜와 같은 deadline을 갖는 Task들을 필터링
+    val filteredTasks = navViewModel.tasklist.filter { it.deadline == selectedDateInt }
+    val list =filteredTasks.map{it.name}
     var checkBoxList by remember { mutableStateOf(list.map { false }.toMutableList()) }
 //    Column {
 //        Text(navViewModel.tasklist[0].name)
@@ -97,6 +105,10 @@ fun CalendarScreen(navController: NavHostController) {
                 modifier = Modifier,
                 onCheckBoxClick = {
                     checkBoxList = checkBoxList.toMutableList().also { it[index] = !it[index] }
+                    // 체크박스 상태 변경 시, tasklist의 해당 Task 객체의 completed 속성 업데이트
+                    val task = filteredTasks[index]
+                    task.completed = checkBoxList[index]
+                    //Log.d("completed","Task '${task.name}' completed: ${task.completed}")
 
                 }
             )
@@ -108,8 +120,9 @@ fun CalendarScreen(navController: NavHostController) {
             )
         }
         item {
-            ListPlusButton {
-                navController.navigate(Routes.CalendarPlus.route)
+            val formattedDate = "${yearState}${monthState.padStart(2, '0')}${dayState.padStart(2, '0')}"
+            ListPlusButton(monthState,dayState,formattedDate) { monthstate,dayState,date ->
+                navController.navigate(Routes.CalendarPlus.createRoute(monthstate,dayState,date))
             }
         }
 
@@ -141,14 +154,14 @@ fun ScheduleHeader(month: String, day: String, modifier: Modifier) {
 }
 
 @Composable
-fun ListPlusButton(listPlus:()->Unit) {
+fun ListPlusButton(month:String,day:String,date: String, listPlus: (String,String,String) -> Unit) {
     Box (modifier = Modifier.fillMaxSize()){
         FloatingActionButton(
             modifier = Modifier
                 .padding(16.dp)
                 .size(50.dp)
                 .align(Alignment.BottomEnd),
-            onClick = listPlus
+            onClick = {listPlus(month,day,date)}
         ) {
             Icon(
                 imageVector = Icons.Default.Add,

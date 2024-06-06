@@ -1,5 +1,6 @@
 package com.example.timeweaver.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,47 +36,48 @@ import com.example.timeweaver.navigation.NavViewModel
 import com.example.timeweaver.navigation.Routes
 import com.example.timeweaver.roomDB.TodoDatabase
 import com.example.timeweaver.roomDB.TodoEntity
+import org.intellij.lang.annotations.JdkConstants.CalendarMonth
 
 @Composable
-fun CalendarPlus(navController: NavHostController,selectedEntity: TodoEntity?=null) {
+fun CalendarPlus(navController: NavHostController,month: String,day:String,date:String,selectedEntity: TodoEntity?=null) {
 
     val navViewModel: NavViewModel = viewModel(viewModelStoreOwner = LocalNavGraphViewModelStoreOwner.current)
 
     val context = LocalContext.current
     val itemdb = TodoDatabase.getItemDatabase(context);
-//    val viewModel:ItemViewModel =
-//        viewModel(factory =ItemViewModelFactory(Repository(itemdb)) )//Factory 객체
+
 
     var itemId by remember {
         mutableStateOf("")
     }
-    var scheduleName by navViewModel.scheduleName//string
-    var estimatedTimeH by navViewModel.estimatedTimeH//string
-    var estimatedTimeM by navViewModel.estimatedTimeM//string
-    //var once by navViewModel.once//boolean
-    var importance by navViewModel.importance//string
-    //val once = remember { mutableStateOf(false) }
-//    val onceState = remember { mutableStateOf(TodoEntity.once) }
-   // var onceState by remember { mutableStateOf(selectedEntity?.once ?: false) }
+    var scheduleName by remember {
+        mutableStateOf("")
+    }
+    var estimatedTimeH by remember {
+        mutableStateOf("")
+    }
+    var importance by remember {
+        mutableStateOf("")
+    }
     var once by remember { mutableStateOf(false) }
 
     val id = itemId.toIntOrNull()?:0
     val timeH = estimatedTimeH.toIntOrNull() ?:0
-    val timeM = estimatedTimeH.toIntOrNull()?:0
     val importance1 = importance.toIntOrNull()?:0
+    val deadline = date.toIntOrNull()?:0
 
     //val Entity = TodoEntity(id,scheduleName,timeH,timeM,onceState,importance1)
 
-    LaunchedEffect(selectedEntity) {
-        if (selectedEntity != null) {
-            var id = selectedEntity.id.toString()
-            var name= selectedEntity.name
-            var timeH= selectedEntity.timeH.toString()
-            var timeM= selectedEntity.timeM.toString()
-            var once= selectedEntity.once
-            var importance= selectedEntity.importance.toString()
-        }
-    }
+//    LaunchedEffect(selectedEntity) {
+//        if (selectedEntity != null) {
+//            var id = selectedEntity.id.toString()
+//            var name= selectedEntity.name
+//            var timeH= selectedEntity.timeH.toString()
+//            var timeM= selectedEntity.timeM.toString()
+//            var once= selectedEntity.once
+//            var importance= selectedEntity.importance.toString()
+//        }
+//    }
 
     fun clearText(){//다 입력하고 버튼 누르면 비우고 싶다
         var id = ""
@@ -93,7 +95,7 @@ fun CalendarPlus(navController: NavHostController,selectedEntity: TodoEntity?=nu
         verticalArrangement = Arrangement.Center
     ){
         Text(
-            text = "5월 27일 해야할 일",
+            text = "${month}월 ${day}일 해야할 일",
             modifier = Modifier.padding(bottom = 20.dp),
             style = TextStyle(
                 fontSize = 20.sp, // 텍스트 크기 설정
@@ -107,10 +109,10 @@ fun CalendarPlus(navController: NavHostController,selectedEntity: TodoEntity?=nu
         EditTimeField(
             value1 = estimatedTimeH,
             onValuechange1 = {estimatedTimeH=it},
-            label1 ="시간" ,
-            value2 = estimatedTimeM ,
-            onValuechange2 = {estimatedTimeM=it},
-            label2 ="분"
+            label1 ="시간"
+//            value2 = estimatedTimeM ,
+//            onValuechange2 = {estimatedTimeM=it},
+//            label2 ="분"
         )
         OnceCheckBox(
             checked = once,
@@ -119,11 +121,19 @@ fun CalendarPlus(navController: NavHostController,selectedEntity: TodoEntity?=nu
         ImportanceField(value = importance, onValuechange = {importance=it})
 
         //추가하기 버튼
-        Column (modifier = Modifier.fillMaxWidth().padding(top = 20.dp), horizontalAlignment = Alignment.CenterHorizontally){
+        Column (modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 20.dp), horizontalAlignment = Alignment.CenterHorizontally){
             Button(modifier = Modifier.padding(),
                 onClick = {
-                    navController.navigate(Routes.Calendar.route)
-                }) {
+                    if(scheduleName!=""&&estimatedTimeH!=null){
+                        val task = Task(scheduleName, navViewModel.tasklist.size, importance1, false, once,deadline,timeH)
+                        navViewModel.tasklist.add(task)
+                        // Task 정보를 로그에 출력
+                        Log.d("TaskAdded", "Task name: ${task.name}, ID: ${navViewModel.tasklist.size}, Importance: ${task.importance}, Completed: ${task.completed}, Once: ${task.once}, Deadline: ${task.deadline}, Time: ${task.time}")
+                        navController.navigate(Routes.Calendar.route)
+                    }
+                }) {1
                 Text(text = "추가하기")
             }
         }
@@ -157,9 +167,9 @@ fun EditNameField(value:String,
 fun EditTimeField(value1:String,
                   onValuechange1:(String)->Unit,
                   label1:String,
-                  value2:String,
-                  onValuechange2:(String)->Unit,
-                  label2:String,
+//                  value2:String,
+//                  onValuechange2:(String)->Unit,
+//                  label2:String,
                   modifier: Modifier = Modifier) {
     Row(verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(bottom = 15.dp)) {
@@ -174,16 +184,16 @@ fun EditTimeField(value1:String,
                 .width(60.dp)
         )
         Text(label1)
-        Spacer(modifier = Modifier.width(8.dp))
-        OutlinedTextField(
-            value = value2,
-            onValueChange = onValuechange2,
-            modifier = modifier
-                .padding(8.dp)
-                .height(56.dp)
-                .width(60.dp)
-        )
-        Text(label2)
+//        Spacer(modifier = Modifier.width(8.dp))
+//        OutlinedTextField(
+//            value = value2,
+//            onValueChange = onValuechange2,
+//            modifier = modifier
+//                .padding(8.dp)
+//                .height(56.dp)
+//                .width(60.dp)
+//        )
+//        Text(label2)
     }
 
 }
