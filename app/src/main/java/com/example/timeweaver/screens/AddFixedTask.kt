@@ -1,8 +1,13 @@
 package com.example.timeweaver.screens
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -18,8 +23,10 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -57,15 +64,38 @@ fun AddFixedTask(navController: NavController) {
 
     Column(
         modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Text(text = "주마다 반복되는 일정 추가", fontSize = 30.sp)
-        OutlinedTextField(value = taskName,  onValueChange = { taskName = it }, label = { Text(text = "일정 명 입력") }, keyboardActions = KeyboardActions())
+        Text(text = "Fixed 추가", fontSize = 30.sp,
+            modifier = Modifier.padding(bottom = 15.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(bottom = 15.dp)
+        ){
+            Text("일정 명")
+            Spacer(modifier = Modifier.size(30.dp))
+            OutlinedTextField(
+                value = taskName,
+                onValueChange = { taskName = it },
+                label= {Text("일정 명 입력")},
+                modifier=Modifier
+                //keyboardActions = KeyboardActions()
+            )
+        }
         TimeInput(state = timePickerState)//추후 dropdownmenu로 수정하는 편이 좋을듯?
-        OutlinedTextField(value = taskTime,  onValueChange = { taskTime = it }, label = { Text(text = "소요 시간 입력(분)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-        Row {
-
-            for (i:Int in 0..6) {
-                Column {
+        TimeInput(state = timePickerState)//추후 dropdownmenu로 수정하는 편이 좋을듯?
+        //OutlinedTextField(value = taskTime,  onValueChange = { taskTime = it }, label = { Text(text = "소요 시간 입력(분)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+        //그냥 시작 시각하고 종료시각 받는 게 더 나을듯?
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            for (i: Int in 0..6) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text(text = day[i])
                     Checkbox(checked = checked[i], onCheckedChange = { checked[i] = it })
                 }
