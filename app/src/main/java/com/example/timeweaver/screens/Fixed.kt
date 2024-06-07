@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -63,7 +64,7 @@ fun FixedScreen(navController: NavHostController) {
                     }
                 }
             }
-            ListPlusButton {
+            ListPlusButton2 {
                 navController.navigate(Routes.AddFixedTask.route)
             }
         }
@@ -85,4 +86,24 @@ fun TableCell(text: String, color: Color) {
     ) {
         Text(text = text)
     }
+}
+
+@Composable
+fun ListPlusButton2( listPlus: (String) -> Unit) {
+    Box (modifier = Modifier.fillMaxSize()){
+        FloatingActionButton(
+            modifier = Modifier
+                .padding(16.dp)
+                .size(50.dp)
+                .align(Alignment.BottomEnd),
+            onClick = {listPlus}
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "plus work to list"
+            )
+        }
+
+    }
+
 }

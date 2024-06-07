@@ -12,8 +12,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.example.timeweaver.screens.AddFixedTask
 import com.example.timeweaver.screens.CalendarPlus
 import com.example.timeweaver.screens.CalendarScreen
@@ -56,8 +58,20 @@ fun Navigate(navController: NavHostController) {
                         CalendarScreen(navController = navController)
                     }
 
-                    composable(route = Routes.CalendarPlus.route) {
-                        CalendarPlus(navController = navController)
+//                    composable(route = Routes.CalendarPlus.route) {
+//                        CalendarPlus(navController = navController)
+//                    }
+                    composable(route = Routes.CalendarPlus.route,
+                        arguments = listOf(
+                            navArgument("month") { type = NavType.StringType },
+                            navArgument("day") { type = NavType.StringType },
+                            navArgument("date") { type = NavType.StringType }
+                        )
+                        ) { backStackEntry ->
+                        val month = backStackEntry.arguments?.getString("month") ?: ""
+                        val day = backStackEntry.arguments?.getString("day") ?: ""
+                        val date = backStackEntry.arguments?.getString("date") ?: ""
+                        CalendarPlus(navController = navController,month=month,day=day, date = date)
                     }
 
                     composable(route = Routes.Fixed.route) {

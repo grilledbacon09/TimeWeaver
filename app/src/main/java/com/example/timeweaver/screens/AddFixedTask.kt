@@ -101,6 +101,7 @@ fun AddFixedTask(navController: NavController) {
                 //keyboardActions = KeyboardActions()
             )
         }
+
         //TimeInput(state = timePickerState)//추후 dropdownmenu로 수정하는 편이 좋을듯?
         //TimeInput(state = timePickerState)//추후 dropdownmenu로 수정하는 편이 좋을듯?
 
@@ -129,7 +130,6 @@ fun AddFixedTask(navController: NavController) {
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
         }
-
 
         Row(
             horizontalArrangement = Arrangement.Center,
