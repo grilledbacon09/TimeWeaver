@@ -12,6 +12,9 @@ import java.util.Date
 import java.util.Locale
 
 class NavViewModel: ViewModel(){
+
+    val fixedTaskArray = Array(24){ Array(7) { "" } }
+
     var tasklist = mutableStateListOf<Task>()
 
     var fixedtasklist = mutableStateListOf<FixedTask>()
