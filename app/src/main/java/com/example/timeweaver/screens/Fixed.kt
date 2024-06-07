@@ -89,14 +89,14 @@ fun TableCell(text: String, color: Color) {
 }
 
 @Composable
-fun ListPlusButton2( listPlus: (String) -> Unit) {
+fun ListPlusButton2( listPlus: () -> Unit) {
     Box (modifier = Modifier.fillMaxSize()){
         FloatingActionButton(
             modifier = Modifier
                 .padding(16.dp)
                 .size(50.dp)
                 .align(Alignment.BottomEnd),
-            onClick = {listPlus}
+            onClick = listPlus
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
