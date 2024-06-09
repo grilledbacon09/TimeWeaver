@@ -6,7 +6,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 class FixedRepository(db:FixedDatabase) {
-    val FixedDAO = db.getDao()
+    val FixedDAO = db.fixedDao()
 
     fun insert(todo: FixedEntity){
         FixedDAO.insert(todo)
