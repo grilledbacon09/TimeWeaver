@@ -11,6 +11,6 @@ class FixedEntity {
     var startH:Int? = 0
     var startM:Int? = 0
     var duration:Int? = 0
-    var daylist: List<String> = listOf("Mon", "Tue", "Wed", "Thu", "Fri")
+    //var daylist: List<String> = listOf("Mon", "Tue", "Wed", "Thu", "Fri")
     var importance:Int = 0
 }
