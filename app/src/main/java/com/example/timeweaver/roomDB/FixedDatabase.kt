@@ -1,30 +1,28 @@
 package com.example.timeweaver.roomDB
 
 import android.content.Context
+import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-abstract class FixedDatabase : RoomDatabase(){
-    abstract fun getDao():FixedDAO
-
+@Database(entities = [FixedEntity::class], version = 1)
+abstract class FixedDatabase : RoomDatabase() {
+    abstract fun fixedDao(): FixedDAO
 
     companion object {
+        @Volatile
         private var instance: FixedDatabase? = null
-        private var todoDAO: FixedDAO? = null
 
-        private var database: FixedDatabase? = null
-        fun getItemDatabase(context: Context): FixedDatabase {
-            return database
-                ?: Room.databaseBuilder(    //만약 database 값이 null이면(없으면) database 생성해서 넘겨줌
-                    context,
-                    FixedDatabase::class.java,
-                    "FixedDB"
-                ).build()
-                    .also {
-                        {
-                            database = it
-                        }
-                    }
+        fun getInstance(context: Context): FixedDatabase {
+            return instance ?: synchronized(this) {
+                instance ?: buildDatabase(context).also { instance = it }
+            }
         }
+
+        private fun buildDatabase(context: Context) =
+            Room.databaseBuilder(
+                context.applicationContext,
+                FixedDatabase::class.java, "FixedDB"
+            ).build()
     }
 }
