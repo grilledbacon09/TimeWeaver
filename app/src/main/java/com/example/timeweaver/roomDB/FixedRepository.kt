@@ -8,8 +8,8 @@ import kotlinx.coroutines.launch
 class FixedRepository(db:FixedDatabase) {
     val FixedDAO = db.fixedDao()
 
-    fun insert(todo: FixedEntity){
-        FixedDAO.insert(todo)
+    fun insert(fixed: FixedEntity){
+        FixedDAO.insert(fixed)
     }
 
 
@@ -17,9 +17,9 @@ class FixedRepository(db:FixedDatabase) {
         return FixedDAO.getAll()
     }
 
-    fun delete(todo: FixedEntity){
+    fun delete(fixed: FixedEntity){
         GlobalScope.launch(Dispatchers.IO) {
-            FixedDAO.delete(todo)
+            FixedDAO.delete(fixed)
         }
     }
 }
