@@ -2,6 +2,7 @@ package com.example.timeweaver.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,7 +32,8 @@ import com.example.timeweaver.navigation.Routes
 @Composable
 fun FixedScreen(navController: NavHostController) {
     val navViewModel: NavViewModel = viewModel(viewModelStoreOwner = LocalNavGraphViewModelStoreOwner.current)
-    val scrollState = rememberScrollState()
+    val verticalScrollState = rememberScrollState()
+    val horizontalScrollState = rememberScrollState()
     val day = listOf("일", "월", "화", "수", "목", "금", "토")
     val daylist = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
 
@@ -36,7 +42,7 @@ fun FixedScreen(navController: NavHostController) {
     ) {
         //Text(text = "Fixed Task Screen")
         Box{
-            Row(modifier = Modifier.verticalScroll(scrollState)) {
+            Row(modifier = Modifier.verticalScroll(verticalScrollState).horizontalScroll(horizontalScrollState)) {
                 for (column in 0 until 8){
                     Column {
                         for (row in 0 until 25){
@@ -89,14 +95,14 @@ fun TableCell(text: String, color: Color) {
 }
 
 @Composable
-fun ListPlusButton2( listPlus: (String) -> Unit) {
+fun ListPlusButton2( listPlus: () -> Unit) {
     Box (modifier = Modifier.fillMaxSize()){
         FloatingActionButton(
             modifier = Modifier
                 .padding(16.dp)
                 .size(50.dp)
                 .align(Alignment.BottomEnd),
-            onClick = {listPlus}
+            onClick = listPlus
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
