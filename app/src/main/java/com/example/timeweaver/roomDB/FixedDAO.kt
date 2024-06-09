@@ -16,6 +16,6 @@ interface FixedDAO {
     @Delete
     fun delete(todo: FixedEntity)
 
-    @Query("SELECT * FROM fixedentity")
+    @Query("SELECT * FROM FixedEntity")
     fun getAll(): LiveData<List<FixedEntity>>
 }
