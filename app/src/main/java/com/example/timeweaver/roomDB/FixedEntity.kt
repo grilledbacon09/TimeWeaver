@@ -11,5 +11,5 @@ class FixedEntity {
     var startH:Int? = 0
     var startM:Int? = 0
     var duration:Int? = 0
-    var days = BooleanArray(7)
+    var days: List<Boolean> = List(7) { false }
 }
