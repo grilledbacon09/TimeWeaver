@@ -8,6 +8,7 @@ import com.example.timeweaver.screens.FixedTask
 import com.example.timeweaver.screens.Task
 import com.example.timeweaver.screens.Freetime
 import com.example.timeweaver.screens.ScheduledTask
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -20,7 +21,9 @@ class NavViewModel: ViewModel(){
 
     var fixedtasklist = mutableStateListOf<FixedTask>()
 
-    var scheduledtasklist = mutableStateListOf<ScheduledTask>()
+    var scheduledtasklist = mutableListOf<ScheduledTask>()
+
+    var freetimelist = mutableListOf<Freetime>()
 
     var scheduleName = mutableStateOf("")
     var estimatedTimeH = mutableStateOf("")
@@ -60,12 +63,67 @@ class NavViewModel: ViewModel(){
 
 
 
-    fun createSchedule(){
-        var freetimelist = mutableListOf<Freetime>()
+    fun calculateDeadline(task: Task): Int{
+        val month_days = listOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
-        var daylist = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+        val calendar = Calendar.getInstance()
+        val current_year = calendar.get(Calendar.YEAR)
+        val current_month = calendar.get(Calendar.MONTH)
+        val current_day = calendar.get(Calendar.DAY_OF_MONTH)
+
+        val deadline_year: Int = task.deadline / 1000
+        val deadline_month: Int = (task.deadline / 10) - (deadline_year * 10)
+        val deadline_day: Int = task.deadline - (deadline_month * 10) - (deadline_year * 1000)
+
+        var current_date = current_year * 365 + current_day
+        for (i in 0..current_month - 1){
+            current_date += month_days[i]
+        }
+
+        var deadline_date = deadline_year * 365 + deadline_day
+        for (i in 0..deadline_month - 1){
+            deadline_date += month_days[i]
+        }
+        if (deadline_date < current_date)
+            return -1
+        else
+            return deadline_date - current_date
+    }
+
+    fun updateImportance(){
+        for (task in tasklist){
+            if (!task.completed){
+                val days_deadline = calculateDeadline(task)
+                if (days_deadline == -1) {
+                    task.completed = true
+                }
+                else if (days_deadline <= 7){
+                    task.importance = 80 + (task.importance - ((task.importance / 10).toInt() * 10))
+                }
+                else if (days_deadline <= 14){
+                    task.importance = 60 + (task.importance - ((task.importance / 10).toInt() * 10))
+                }
+                else if (days_deadline <= 21){
+                    task.importance = 40 + (task.importance - ((task.importance / 10).toInt() * 10))
+                }
+                else if (days_deadline < 30) {
+                    task.importance = 20 + (task.importance - ((task.importance / 10).toInt() * 10))
+                }
+                else{
+                    continue
+                }
+            }
+        }
+    }
+
+
+    fun createSchedule(){
+        scheduledtasklist = mutableListOf<ScheduledTask>()
+        freetimelist = mutableListOf<Freetime>()
+
+        var daylist = mutableMapOf(Pair("Sun", 0), Pair("Mon", 0), Pair("Tue", 0), Pair("Wed", 0), Pair("Thu", 0), Pair("Fri", 0), Pair("Sat", 0))
         for (day in daylist) {
-            freetimelist.add(Freetime(day, 0, 1440))
+            freetimelist.add(Freetime(day.key, 0, 1440))
         }
         for (fixedtask in fixedtasklist){
             var flag: Boolean = false
@@ -86,11 +144,9 @@ class NavViewModel: ViewModel(){
                         if (freetime.length == 0)
                             freetimelist.remove(freetime)
 
-                        freetimelist.add(
-                            Freetime(freetime.day,
+                        freetimelist.add(Freetime(freetime.day,
                             fixedtask.startTime + fixedtask.length,
-                            (freetime.startTime + freetime.length) - (fixedtask.startTime + fixedtask.length))
-                        )
+                            (freetime.startTime + freetime.length) - (fixedtask.startTime + fixedtask.length)))
                         break
                     }
                 }
@@ -98,26 +154,144 @@ class NavViewModel: ViewModel(){
         }
 
         tasklist.sortBy { it.importance }
+        tasklist.reverse()
 
         var importance_sum = 0
         var total_freetime = 0
+        var cnt_freetime = 0
 
         for (task in tasklist){
             importance_sum += task.importance
         }
         for (freetime in freetimelist){
             total_freetime += freetime.length
+            cnt_freetime++
         }
         val weekly_freetime = total_freetime
         var scheduledtaskID = 0
 
         for (task in tasklist){
             if (!task.completed){
+                daylist = daylist.toList().sortedBy { it.second }.toMap().toMutableMap()
+                val day: String = daylist.toList().first().first
+                var dflag = false
+
+                for (freetime in freetimelist){
+                    if (freetime.day == day) {
+                        if (task.importance >= 80) {
+                            if (task.once) {
+                                if (task.time <= freetime.length) {
+                                    scheduledtasklist.add(ScheduledTask(task.name,scheduledtaskID++,freetime.day,freetime.startTime,task.time))
+                                    val day_task_num = daylist.get(day)
+                                    var task_num = 0
+                                    day_task_num?.let { task_num = day_task_num + 1 }
+                                        ?: let { task_num = 0 };
+                                    daylist.set(day, task_num)
+
+                                    freetime.startTime += task.time
+                                    freetime.length -= task.time
+                                    if (freetime.length == 0)
+                                        freetimelist.remove(freetime)
+
+                                    total_freetime -= task.time
+
+                                    task.time = 0
+                                    task.completed = true
+
+                                    dflag = true
+                                    break
+                                }
+                            }
+
+                            if (task.once == false && task.time <= freetime.length) {
+                                scheduledtasklist.add(ScheduledTask(task.name,scheduledtaskID++,freetime.day,freetime.startTime,task.time))
+                                val day_task_num = daylist.get(day)
+                                var task_num = 0
+                                day_task_num?.let { task_num = day_task_num + 1 }
+                                    ?: let { task_num = 0 };
+                                daylist.set(day, task_num)
+
+                                freetime.startTime += task.time
+                                freetime.length -= task.time
+                                if (freetime.length == 0)
+                                    freetimelist.remove(freetime)
+
+                                total_freetime -= task.time
+
+                                task.time = 0
+                                task.completed = true
+
+                                dflag = true
+                                break
+                            }
+                        }
+
+                        else if (task.importance >= 60 && task.once == false) {
+                            val time_this_week = Math.min(total_freetime, (task.time / 2 / 60) * 60)
+
+                            if (time_this_week == 0)
+                                break
+
+                            if (time_this_week <= freetime.length){
+                                scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, time_this_week))
+                                val day_task_num = daylist.get(day)
+                                var task_num = 0
+                                day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
+                                daylist.set(day, task_num)
+
+                                freetime.startTime += time_this_week
+                                freetime.length -= time_this_week
+                                if (freetime.length == 0)
+                                    freetimelist.remove(freetime)
+
+                                total_freetime -= time_this_week
+                                task.time -= time_this_week
+
+                                dflag = true
+                                break
+                            }
+                        }
+
+                        else if (task.once == false){
+                            val importance_weight: Float = (task.importance / importance_sum).toFloat()
+                            val time_this_week = Math.min(total_freetime, (Math.round(task.time * importance_weight) / 60) * 60)
+
+                            if (time_this_week == 0)
+                                break
+
+                            scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, time_this_week))
+                            val day_task_num = daylist.get(day)
+                            var task_num = 0
+                            day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
+                            daylist.set(day, task_num)
+
+                            freetime.startTime += time_this_week
+                            freetime.length -= time_this_week
+                            if (freetime.length == 0)
+                                freetimelist.remove(freetime)
+
+                            total_freetime -= time_this_week
+                            task.time -= time_this_week
+
+                            dflag = true
+                            break
+                        }
+                    }
+                }
+
+                if (dflag == true)
+                    continue
+
+
                 if (task.importance >= 80){                                             //Task must be finished this week
                     if (task.once){                                                     //Must finish task at once
                         for (freetime in freetimelist){
                             if (task.time <= freetime.length){
                                 scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, task.time))
+                                val day_task_num = daylist.get(freetime.day)
+                                var task_num = 0
+                                day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
+                                daylist.set(freetime.day, task_num)
 
                                 freetime.startTime += task.time
                                 freetime.length -= task.time
@@ -138,6 +312,10 @@ class NavViewModel: ViewModel(){
                         for (freetime in freetimelist){
                             if (task.time <= freetime.length){
                                 scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, task.time))
+                                val day_task_num = daylist.get(freetime.day)
+                                var task_num = 0
+                                day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
+                                daylist.set(freetime.day, task_num)
 
                                 freetime.startTime += task.time
                                 freetime.length -= task.time
@@ -163,6 +341,10 @@ class NavViewModel: ViewModel(){
                             time_sum += freetime.length
                             if (time_sum >= task.time){
                                 scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, task.time))
+                                val day_task_num = daylist.get(freetime.day)
+                                var task_num = 0
+                                day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
+                                daylist.set(freetime.day, task_num)
 
                                 freetime.length -= task.time
                                 if (freetime.length == 0)
@@ -176,6 +358,10 @@ class NavViewModel: ViewModel(){
                             }
                             else{
                                 scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, freetime.length))
+                                val day_task_num = daylist.get(freetime.day)
+                                var task_num = 0
+                                day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
+                                daylist.set(freetime.day, task_num)
 
                                 task.time -= freetime.length
                                 total_freetime -= freetime.length
@@ -197,6 +383,10 @@ class NavViewModel: ViewModel(){
                             for (freetime in freetimelist){
                                 if (time_this_week <= freetime.length){
                                     scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, time_this_week))
+                                    val day_task_num = daylist.get(freetime.day)
+                                    var task_num = 0
+                                    day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
+                                    daylist.set(freetime.day, task_num)
 
                                     freetime.startTime += time_this_week
                                     freetime.length -= time_this_week
@@ -222,6 +412,10 @@ class NavViewModel: ViewModel(){
                                 time_sum += freetime.length
                                 if (time_sum >= time_this_week){
                                     scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, time_this_week))
+                                    val day_task_num = daylist.get(freetime.day)
+                                    var task_num = 0
+                                    day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
+                                    daylist.set(freetime.day, task_num)
 
                                     freetime.length -= task.time
                                     if (freetime.length == 0)
@@ -235,6 +429,10 @@ class NavViewModel: ViewModel(){
                                 }
                                 else{
                                     scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, freetime.length))
+                                    val day_task_num = daylist.get(freetime.day)
+                                    var task_num = 0
+                                    day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
+                                    daylist.set(freetime.day, task_num)
 
                                     time_this_week -= freetime.length
                                     total_freetime -= freetime.length
@@ -247,10 +445,9 @@ class NavViewModel: ViewModel(){
                         }
                     }
 
-                    else{                                                                   //If you have enough time
+                    else if (task.time < weekly_freetime && task.importance >= 60){                                   //If you have enough time
                         if (task.once == false){
-                            val importance_weight: Float = (task.importance / importance_sum).toFloat()
-                            var time_this_week = Math.min(total_freetime, (Math.round(task.time * importance_weight) / 30) * 30)
+                            var time_this_week = Math.min(total_freetime, (task.time / 2 / 60) * 60)
 
                             if (time_this_week == 0)
                                 continue
@@ -258,6 +455,10 @@ class NavViewModel: ViewModel(){
                             for (freetime in freetimelist){
                                 if (time_this_week <= freetime.length){
                                     scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, time_this_week))
+                                    val day_task_num = daylist.get(freetime.day)
+                                    var task_num = 0
+                                    day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
+                                    daylist.set(freetime.day, task_num)
 
                                     freetime.startTime += time_this_week
                                     freetime.length -= time_this_week
@@ -281,6 +482,10 @@ class NavViewModel: ViewModel(){
                                     time_sum += freetime.length
                                     if (time_sum >= time_this_week){
                                         scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, time_this_week))
+                                        val day_task_num = daylist.get(freetime.day)
+                                        var task_num = 0
+                                        day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
+                                        daylist.set(freetime.day, task_num)
 
                                         freetime.length -= time_this_week
                                         if (freetime.length == 0)
@@ -294,6 +499,82 @@ class NavViewModel: ViewModel(){
                                     }
                                     else{
                                         scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, freetime.length))
+                                        val day_task_num = daylist.get(freetime.day)
+                                        var task_num = 0
+                                        day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
+                                        daylist.set(freetime.day, task_num)
+
+                                        time_this_week -= freetime.length
+                                        total_freetime -= freetime.length
+                                        task.time -= time_this_week
+
+                                        freetime.length = 0
+                                        freetimelist.remove(freetime)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    else {                                                                   //If you have enough time
+                        if (task.once == false){
+                            val importance_weight: Float = (task.importance / importance_sum).toFloat()
+                            var time_this_week = Math.min(total_freetime, (Math.round(task.time * importance_weight) / 60) * 60)
+
+                            if (time_this_week == 0)
+                                continue
+
+                            for (freetime in freetimelist){
+                                if (time_this_week <= freetime.length){
+                                    scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, time_this_week))
+                                    val day_task_num = daylist.get(freetime.day)
+                                    var task_num = 0
+                                    day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
+                                    daylist.set(freetime.day, task_num)
+
+                                    freetime.startTime += time_this_week
+                                    freetime.length -= time_this_week
+                                    if (freetime.length == 0)
+                                        freetimelist.remove(freetime)
+
+                                    total_freetime -= time_this_week
+
+                                    task.time -= time_this_week
+                                    time_this_week = 0
+                                    break
+                                }
+                            }
+
+                            if(time_this_week != 0){
+                                var time_sum = 0
+                                for (freetime in freetimelist){
+                                    if (freetime.length == 0)
+                                        continue
+
+                                    time_sum += freetime.length
+                                    if (time_sum >= time_this_week){
+                                        scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, time_this_week))
+                                        val day_task_num = daylist.get(freetime.day)
+                                        var task_num = 0
+                                        day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
+                                        daylist.set(freetime.day, task_num)
+
+                                        freetime.length -= time_this_week
+                                        if (freetime.length == 0)
+                                            freetimelist.remove(freetime)
+
+                                        total_freetime -= time_this_week
+
+                                        task.time -= time_this_week
+                                        time_this_week = 0
+                                        break
+                                    }
+                                    else{
+                                        scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, freetime.length))
+                                        val day_task_num = daylist.get(freetime.day)
+                                        var task_num = 0
+                                        day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
+                                        daylist.set(freetime.day, task_num)
 
                                         time_this_week -= freetime.length
                                         total_freetime -= freetime.length
@@ -311,3 +592,4 @@ class NavViewModel: ViewModel(){
         }
     }
 }
+
