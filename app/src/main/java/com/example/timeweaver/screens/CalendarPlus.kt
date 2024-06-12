@@ -34,8 +34,15 @@ import androidx.navigation.NavHostController
 import com.example.timeweaver.navigation.LocalNavGraphViewModelStoreOwner
 import com.example.timeweaver.navigation.NavViewModel
 import com.example.timeweaver.navigation.Routes
+import com.example.timeweaver.roomDB.FixedDatabase
+import com.example.timeweaver.roomDB.FixedEntity
+import com.example.timeweaver.roomDB.FixedRepository
 import com.example.timeweaver.roomDB.TodoDatabase
 import com.example.timeweaver.roomDB.TodoEntity
+import com.example.timeweaver.roomDB.TodoRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.intellij.lang.annotations.JdkConstants.CalendarMonth
 
 @Composable
@@ -45,6 +52,8 @@ fun CalendarPlus(navController: NavHostController,month: String,day:String,date:
 
     val context = LocalContext.current
     val itemdb = TodoDatabase.getItemDatabase(context);
+
+    val todoRepository = TodoRepository(itemdb)
 
 
     var itemId by remember {
@@ -130,6 +139,10 @@ fun CalendarPlus(navController: NavHostController,month: String,day:String,date:
                         val task = Task(scheduleName, navViewModel.tasklist.size, importance1, false, once,deadline,timeH)
                         navViewModel.tasklist.add(task)
                         // Task 정보를 로그에 출력
+                        val todo = TodoEntity(id, scheduleName, estimatedTimeH.toInt(), 0, once, importance.toInt())
+                        GlobalScope.launch(Dispatchers.IO) {
+                            todoRepository.insert(todo)
+                        }
                         Log.d("TaskAdded", "Task name: ${task.name}, ID: ${navViewModel.tasklist.size}, Importance: ${task.importance}, Completed: ${task.completed}, Once: ${task.once}, Deadline: ${task.deadline}, Time: ${task.time}")
                         navController.navigate(Routes.Calendar.route)
                     }
