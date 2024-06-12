@@ -9,14 +9,14 @@ import androidx.room.Query
 @Dao
 interface FixedDAO {
     @Insert
-    fun insert(todo: FixedEntity)
+    fun insert(item: FixedEntity)
 
     //(onConflict = REPLACE)
     /*@Query("SELECT * FROM todo WHERE date = :date")
     fun getAllByDate(date: String): LiveData<List<TodoEntity>?>*/
 
     @Delete
-    fun delete(todo: FixedEntity)
+    fun delete(item: FixedEntity)
 
     @Query("SELECT * FROM FixedEntity")
     fun getAll(): LiveData<List<FixedEntity>>
