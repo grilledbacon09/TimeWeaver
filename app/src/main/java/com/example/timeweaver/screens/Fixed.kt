@@ -83,7 +83,7 @@ fun FixedScreen(navController: NavHostController) {
 //                                    if (navViewModel.fixedTaskArray[row-1][column-1] != "")
 //                                        TableCell(text = navViewModel.fixedTaskArray[row-1][column-1], color = Color.LightGray)
                                     if (fixedEntitiesState.any { (it.startH == row || ((it.startH < row) && (it.startH + it.duration - 1) >= row)) && it.days == daylist[column-1] })
-                                        TableCell(text = fixedEntitiesState.find { it.startH == row && it.days == daylist[column-1] }?.name ?: "", color = Color.LightGray)
+                                        TableCell(text = fixedEntitiesState.find { (it.startH == row || ((it.startH < row) && (it.startH + it.duration - 1) >= row)) && it.days == daylist[column-1] }?.name ?: "", color = Color.LightGray)
                                 }
                             }
                         }
