@@ -139,7 +139,7 @@ fun CalendarPlus(navController: NavHostController,month: String,day:String,date:
                         val task = Task(scheduleName, navViewModel.tasklist.size, importance1, false, once,deadline,timeH)
                         navViewModel.tasklist.add(task)
                         // Task 정보를 로그에 출력
-                        val todo = TodoEntity(scheduleName, estimatedTimeH.toInt(), 0, once, importance.toInt(), id)
+                        val todo = TodoEntity(scheduleName, estimatedTimeH.toInt(), once, importance.toInt(), id)
                         GlobalScope.launch(Dispatchers.IO) {
                             todoRepository.insert(todo)
                         }
