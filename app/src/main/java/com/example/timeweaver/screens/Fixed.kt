@@ -1,5 +1,6 @@
 package com.example.timeweaver.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
@@ -79,7 +80,9 @@ fun FixedScreen(navController: NavHostController) {
 //                                            TableCell(text = it.name, Color.LightGray)
 //                                        }
 //                                    }
-                                    if (fixedEntitiesState.any { it.startH == row && it.days == daylist[column-1] })
+//                                    if (navViewModel.fixedTaskArray[row-1][column-1] != "")
+//                                        TableCell(text = navViewModel.fixedTaskArray[row-1][column-1], color = Color.LightGray)
+                                    if (fixedEntitiesState.any { (it.startH == row || ((it.startH < row) && (it.startH + it.duration - 1) >= row)) && it.days == daylist[column-1] })
                                         TableCell(text = fixedEntitiesState.find { it.startH == row && it.days == daylist[column-1] }?.name ?: "", color = Color.LightGray)
                                 }
                             }
@@ -92,7 +95,7 @@ fun FixedScreen(navController: NavHostController) {
             }
         }
 
-        //Log.w("fixedList", "${navViewModel.fixedtasklist}")
+        Log.w("fixedList", "${navViewModel.fixedtasklist}")
     }
 }
 
