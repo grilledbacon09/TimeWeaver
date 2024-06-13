@@ -20,8 +20,8 @@ class TodoRepository (db:TodoDatabase){
     fun getAll(): LiveData<List<TodoEntity>> {
         return todoDAO.getAll().map { todoEntities ->
             todoEntities.map { entity ->
-                TodoEntity(entity.id, entity.name, entity.timeH, entity.timeM,
-                    entity.once, entity.importance)
+                TodoEntity(entity.name, entity.timeH, entity.timeM,
+                    entity.once, entity.importance, entity.id)
             }
         }
     }
