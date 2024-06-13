@@ -19,8 +19,10 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TimeInput
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.timeweaver.navigation.LocalNavGraphViewModelStoreOwner
@@ -85,6 +88,46 @@ fun AddFixedTask(navController: NavController) {
 
     val day = listOf("일", "월", "화", "수", "목", "금", "토")
     val daylist = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+
+    val fixedEntities: LiveData<List<FixedEntity>> = fixedRepository.getAll()
+    // Observe the LiveData using remember and collectAsState to get the latest data
+    val fixedEntitiesState: List<FixedEntity> by fixedEntities.observeAsState(emptyList())
+
+    val fixedTaskArray = Array(24){ Array(7) { "" } }
+
+    val dayMap = mapOf(
+        "Sun" to 0,
+        "Mon" to 1,
+        "Tue" to 2,
+        "Wed" to 3,
+        "Thu" to 4,
+        "Fri" to 5,
+        "Sat" to 6
+    )
+
+    fixedEntitiesState.forEach {
+        if (it.startH + it.duration - 1 > 23){//날짜가 넘어가면
+            if (it.days == "Sat"){ // 토-일로 넘어가면
+                for (i:Int in it.startH-1..<24){
+                    fixedTaskArray[i][dayMap[it.days]!!] = it.name
+                }
+                for (i:Int in 0..<it.startH+it.duration-24-1){
+                    fixedTaskArray[i][0] = it.name
+                }
+            }else{ // 아니면
+                for (i:Int in it.startH-1..<24){
+                    fixedTaskArray[i][dayMap[it.days]!!] = it.name
+                }
+                for (i:Int in 0..<it.startH+it.duration-24-1){
+                    fixedTaskArray[i][dayMap[it.days]!!+1] = it.name
+                }
+            }
+        }else{//아니면
+            for (i:Int in it.startH-1..<it.startH+it.duration){
+                fixedTaskArray[i][dayMap[it.days]!!] = it.name
+            }
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -165,16 +208,17 @@ fun AddFixedTask(navController: NavController) {
                 for (i in 0..6){
                     for (j:Int in taskStartHour.toInt()-1..<taskStartHour.toInt()+taskTime.toInt()-1){
                         if (j < 24){
-                            if(navViewModel.fixedTaskArray[j][i] != "") conflict = true
+                            if(fixedTaskArray[j][i] != "") conflict = true
                         }else{
                             if (i == 6){
-                                if(navViewModel.fixedTaskArray[j-24][0] != "") conflict = true
+                                if(fixedTaskArray[j-24][0] != "") conflict = true
                             }else{
-                                if(navViewModel.fixedTaskArray[j-24][i+1] != "") conflict = true
+                                if(fixedTaskArray[j-24][i+1] != "") conflict = true
                             }
                         }
                     }
                 }
+
 
                 if (conflict){
                     Toast.makeText(context, "입력한 시간에 이미 스케줄이 존재합니다", Toast.LENGTH_SHORT).show()
@@ -192,17 +236,17 @@ fun AddFixedTask(navController: NavController) {
                             )
                             navViewModel.fixedtasklist.add(fixedTask)
 
-                            for (j:Int in taskStartHour.toInt()-1..<taskStartHour.toInt()+taskTime.toInt()-1){
-                                if (j < 24){
-                                    navViewModel.fixedTaskArray[j][i] = taskName
-                                }else {
-                                    if (i == 6) {
-                                        navViewModel.fixedTaskArray[j-24][0] = taskName
-                                    } else {
-                                        navViewModel.fixedTaskArray[j-24][i+1] = taskName
-                                    }
-                                }
-                            }
+//                            for (j:Int in taskStartHour.toInt()-1..<taskStartHour.toInt()+taskTime.toInt()-1){
+//                                if (j < 24){
+//                                    navViewModel.fixedTaskArray[j][i] = taskName
+//                                }else {
+//                                    if (i == 6) {
+//                                        navViewModel.fixedTaskArray[j-24][0] = taskName
+//                                    } else {
+//                                        navViewModel.fixedTaskArray[j-24][i+1] = taskName
+//                                    }
+//                                }
+//                            }
 //                            val fixed = FixedEntity(
 //                                name = taskName,
 //                                startH = taskStartHour.toInt(),

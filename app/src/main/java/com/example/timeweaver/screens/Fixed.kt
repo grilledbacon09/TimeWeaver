@@ -28,7 +28,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.timeweaver.navigation.LocalNavGraphViewModelStoreOwner
@@ -45,6 +44,15 @@ fun FixedScreen(navController: NavHostController) {
     val horizontalScrollState = rememberScrollState()
     val day = listOf("일", "월", "화", "수", "목", "금", "토")
     val daylist = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+    val dayMap = mapOf(
+        "Sun" to 0,
+        "Mon" to 1,
+        "Tue" to 2,
+        "Wed" to 3,
+        "Thu" to 4,
+        "Fri" to 5,
+        "Sat" to 6
+    )
 
     val context = LocalContext.current
     val database = FixedDatabase.getFixedDatabase(context)
@@ -52,6 +60,32 @@ fun FixedScreen(navController: NavHostController) {
     val fixedEntities: LiveData<List<FixedEntity>> = fixedRepository.getAll()
     // Observe the LiveData using remember and collectAsState to get the latest data
     val fixedEntitiesState: List<FixedEntity> by fixedEntities.observeAsState(emptyList())
+
+    val fixedTaskArray = Array(24){ Array(7) { "" } }
+
+    fixedEntitiesState.forEach {
+        if (it.startH + it.duration - 1 > 23){//날짜가 넘어가면
+            if (it.days == "Sat"){ // 토-일로 넘어가면
+                for (i:Int in it.startH-1..<24){
+                    fixedTaskArray[i][dayMap[it.days]!!] = it.name
+                }
+                for (i:Int in 0..<it.startH+it.duration-24-1){
+                    fixedTaskArray[i][0] = it.name
+                }
+            }else{ // 아니면
+                for (i:Int in it.startH-1..<24){
+                    fixedTaskArray[i][dayMap[it.days]!!] = it.name
+                }
+                for (i:Int in 0..<it.startH+it.duration-24-1){
+                    fixedTaskArray[i][dayMap[it.days]!!+1] = it.name
+                }
+            }
+        }else{//아니면
+            for (i:Int in it.startH-1..<it.startH+it.duration){
+                fixedTaskArray[i][dayMap[it.days]!!] = it.name
+            }
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -80,10 +114,10 @@ fun FixedScreen(navController: NavHostController) {
 //                                            TableCell(text = it.name, Color.LightGray)
 //                                        }
 //                                    }
-//                                    if (navViewModel.fixedTaskArray[row-1][column-1] != "")
-//                                        TableCell(text = navViewModel.fixedTaskArray[row-1][column-1], color = Color.LightGray)
-                                    if (fixedEntitiesState.any { (it.startH == row || ((it.startH < row) && (it.startH + it.duration - 1) >= row)) && it.days == daylist[column-1] })
-                                        TableCell(text = fixedEntitiesState.find { (it.startH == row || ((it.startH < row) && (it.startH + it.duration - 1) >= row)) && it.days == daylist[column-1] }?.name ?: "", color = Color.LightGray)
+                                    if (fixedTaskArray[row-1][column-1] != "")
+                                        TableCell(text = fixedTaskArray[row-1][column-1], color = Color.LightGray)
+//                                    if (fixedEntitiesState.any { (it.startH == row || ((it.startH < row) && (it.startH + it.duration - 1) >= row)) && it.days == daylist[column-1] })
+//                                        TableCell(text = fixedEntitiesState.find { (it.startH == row || ((it.startH < row) && (it.startH + it.duration - 1) >= row)) && it.days == daylist[column-1] }?.name ?: "", color = Color.LightGray)
                                 }
                             }
                         }
