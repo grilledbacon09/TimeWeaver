@@ -1,5 +1,6 @@
 package com.example.timeweaver.screens
 
+
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -18,8 +19,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TimeInput
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -37,6 +36,12 @@ import androidx.navigation.NavController
 import com.example.timeweaver.navigation.LocalNavGraphViewModelStoreOwner
 import com.example.timeweaver.navigation.NavViewModel
 import com.example.timeweaver.navigation.Routes
+import com.example.timeweaver.roomDB.FixedDatabase
+import com.example.timeweaver.roomDB.FixedRepository
+import com.example.timeweaver.roomDB.FixedEntity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,6 +51,9 @@ fun AddFixedTask(navController: NavController) {
 
     val navViewModel: NavViewModel =
         viewModel(viewModelStoreOwner = LocalNavGraphViewModelStoreOwner.current)
+
+    val database = FixedDatabase.getFixedDatabase(context)
+    val fixedRepository = FixedRepository(database)
 
     var taskName by remember {
         mutableStateOf("")
@@ -194,6 +202,16 @@ fun AddFixedTask(navController: NavController) {
                                         navViewModel.fixedTaskArray[j-24][i+1] = taskName
                                     }
                                 }
+                            }
+//                            val fixed = FixedEntity(
+//                                name = taskName,
+//                                startH = taskStartHour.toInt(),
+//                                days = listOf(daylist[i]),
+//                                duration = taskTime.toInt()
+//                            )
+                            val fixed = FixedEntity(taskName, taskStartHour.toInt(), daylist[i], taskTime.toInt())
+                            GlobalScope.launch(Dispatchers.IO) {
+                                fixedRepository.insert(fixed)
                             }
 
                             Log.w("fixedTaskList", "${navViewModel.fixedtasklist}")

@@ -10,19 +10,16 @@ abstract class FixedDatabase : RoomDatabase() {
     abstract fun fixedDao(): FixedDAO
 
     companion object {
-        @Volatile
-        private var instance: FixedDatabase? = null
-
-        fun getInstance(context: Context): FixedDatabase {
-            return instance ?: synchronized(this) {
-                instance ?: buildDatabase(context).also { instance = it }
-            }
-        }
-
-        private fun buildDatabase(context: Context) =
-            Room.databaseBuilder(
-                context.applicationContext,
-                FixedDatabase::class.java, "FixedDB"
+        private var database:FixedDatabase?=null
+        fun getFixedDatabase(context: Context): FixedDatabase {
+            return database ?: Room.databaseBuilder(
+                context,
+                FixedDatabase::class.java,
+                "Fixed"
             ).build()
+                .also {
+                    database = it
+                }
+        }
     }
 }

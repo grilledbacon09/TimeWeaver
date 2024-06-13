@@ -1,5 +1,6 @@
 package com.example.timeweaver.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
@@ -19,15 +20,23 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.timeweaver.navigation.LocalNavGraphViewModelStoreOwner
 import com.example.timeweaver.navigation.NavViewModel
 import com.example.timeweaver.navigation.Routes
+import com.example.timeweaver.roomDB.FixedDatabase
+import com.example.timeweaver.roomDB.FixedEntity
+import com.example.timeweaver.roomDB.FixedRepository
 
 @Composable
 fun FixedScreen(navController: NavHostController) {
@@ -37,12 +46,21 @@ fun FixedScreen(navController: NavHostController) {
     val day = listOf("일", "월", "화", "수", "목", "금", "토")
     val daylist = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
 
+    val context = LocalContext.current
+    val database = FixedDatabase.getFixedDatabase(context)
+    val fixedRepository = FixedRepository(database)
+    val fixedEntities: LiveData<List<FixedEntity>> = fixedRepository.getAll()
+    // Observe the LiveData using remember and collectAsState to get the latest data
+    val fixedEntitiesState: List<FixedEntity> by fixedEntities.observeAsState(emptyList())
+
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
         //Text(text = "Fixed Task Screen")
         Box{
-            Row(modifier = Modifier.verticalScroll(verticalScrollState).horizontalScroll(horizontalScrollState)) {
+            Row(modifier = Modifier
+                .verticalScroll(verticalScrollState)
+                .horizontalScroll(horizontalScrollState)) {
                 for (column in 0 until 8){
                     Column {
                         for (row in 0 until 25){
@@ -62,8 +80,10 @@ fun FixedScreen(navController: NavHostController) {
 //                                            TableCell(text = it.name, Color.LightGray)
 //                                        }
 //                                    }
-                                    if (navViewModel.fixedTaskArray[row-1][column-1] != "")
-                                        TableCell(text = navViewModel.fixedTaskArray[row-1][column-1], color = Color.LightGray)
+//                                    if (navViewModel.fixedTaskArray[row-1][column-1] != "")
+//                                        TableCell(text = navViewModel.fixedTaskArray[row-1][column-1], color = Color.LightGray)
+                                    if (fixedEntitiesState.any { (it.startH == row || ((it.startH < row) && (it.startH + it.duration - 1) >= row)) && it.days == daylist[column-1] })
+                                        TableCell(text = fixedEntitiesState.find { (it.startH == row || ((it.startH < row) && (it.startH + it.duration - 1) >= row)) && it.days == daylist[column-1] }?.name ?: "", color = Color.LightGray)
                                 }
                             }
                         }
@@ -75,7 +95,7 @@ fun FixedScreen(navController: NavHostController) {
             }
         }
 
-        //Log.w("fixedList", "${navViewModel.fixedtasklist}")
+        Log.w("fixedList", "${navViewModel.fixedtasklist}")
     }
 }
 
