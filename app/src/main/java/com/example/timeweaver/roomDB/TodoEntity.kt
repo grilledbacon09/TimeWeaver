@@ -7,7 +7,6 @@ import androidx.room.PrimaryKey
 data class TodoEntity (
     var name: String,
     var timeH:Int,
-    var timeM:Int,
     var once:Boolean,
     var importance:Int,
     @PrimaryKey(autoGenerate = true)
