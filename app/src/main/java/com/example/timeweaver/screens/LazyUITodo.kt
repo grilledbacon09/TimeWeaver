@@ -46,7 +46,7 @@ fun TodoItemUI(item: TodoEntity, onItemClick: (item:TodoEntity) -> Unit) {
         Text(item.id.toString(), fontSize = 15.sp)
         Text(item.name.toString(), fontSize = 15.sp)
         Text(item.timeH.toString(), fontSize = 15.sp)
-        Text(item.timeM.toString(), fontSize = 15.sp)
+        //Text(item.timeM.toString(), fontSize = 15.sp)
         Text(item.once.toString(), fontSize = 15.sp)
         Text(item.importance.toString(), fontSize = 15.sp)
     }
