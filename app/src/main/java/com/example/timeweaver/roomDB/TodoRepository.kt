@@ -13,8 +13,12 @@ class TodoRepository (db:TodoDatabase){
 
 
 
-    fun insert(todo: TodoEntity){
+    suspend fun insert(todo: TodoEntity){
         todoDAO.insert(todo)
+    }
+
+    suspend fun update(todo: TodoEntity){
+        todoDAO.update(todo)
     }
 
     fun getAll(): LiveData<List<TodoEntity>> {
