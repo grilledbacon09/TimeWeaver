@@ -12,6 +12,10 @@ interface FixedDAO {
     @Insert
     fun insert(item: FixedEntity)
 
+    //(onConflict = REPLACE)
+    /*@Query("SELECT * FROM todo WHERE date = :date")
+    fun getAllByDate(date: String): LiveData<List<TodoEntity>?>*/
+
     @Update
     suspend fun update(item: FixedEntity)
 
