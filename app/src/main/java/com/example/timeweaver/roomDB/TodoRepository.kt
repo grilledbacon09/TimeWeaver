@@ -37,4 +37,8 @@ class TodoRepository (db:TodoDatabase){
             todoDAO.delete(todo)
         }
     }
+
+    suspend fun getEntityById(id: Int): TodoEntity? {
+        return todoDAO.getEntityById(id)
+    }
 }
