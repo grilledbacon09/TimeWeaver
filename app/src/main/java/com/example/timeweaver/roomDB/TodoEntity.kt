@@ -6,11 +6,13 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "todo")
 data class TodoEntity (
     var name: String,
-    var timeH:Int,
-    var once:Boolean,
-    var importance:Int,
     @PrimaryKey(autoGenerate = true)
-    var id: Int=0
+    var id: Int=0,
+    var importance:Int,
+    var completed:Boolean,
+    var once:Boolean,
+    var deadline:Int,
+    var timeH:Int
 
 )
 
