@@ -27,5 +27,8 @@ interface TodoDAO {
     @Query("SELECT * FROM todo")
     fun getAll(): LiveData<List<TodoEntity>>
 
+    @Query("SELECT * FROM todo WHERE id = :id")
+    suspend fun getEntityById(id: Int): TodoEntity?
+
 
 }
