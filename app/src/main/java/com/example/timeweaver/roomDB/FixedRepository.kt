@@ -30,4 +30,8 @@ class FixedRepository(db: FixedDatabase) {
             FixedDAO.delete(fixed)
         }
     }
+
+    suspend fun getEntityById(id: Int): FixedEntity? {
+        return FixedDAO.getEntityById(id)
+    }
 }
