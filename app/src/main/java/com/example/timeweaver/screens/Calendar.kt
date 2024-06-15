@@ -22,21 +22,30 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.timeweaver.navigation.LocalNavGraphViewModelStoreOwner
 import com.example.timeweaver.navigation.NavViewModel
 import com.example.timeweaver.navigation.Routes
+import com.example.timeweaver.roomDB.FixedDatabase
+import com.example.timeweaver.roomDB.FixedEntity
+import com.example.timeweaver.roomDB.FixedRepository
+import com.example.timeweaver.roomDB.TodoDatabase
+import com.example.timeweaver.roomDB.TodoEntity
+import com.example.timeweaver.roomDB.TodoRepository
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -44,6 +53,12 @@ fun CalendarScreen(navController: NavHostController) {
     val navViewModel: NavViewModel = viewModel(viewModelStoreOwner = LocalNavGraphViewModelStoreOwner.current)
 //    val navViewModel: NavViewModel =
 //        viewModel(viewModelStoreOwner = LocalNavGraphViewModelStoreOwner.current)
+    val context = LocalContext.current
+    val database = TodoDatabase.getItemDatabase(context)
+    val todoRepository = TodoRepository(database)
+    val todoEntities: LiveData<List<TodoEntity>> = todoRepository.getAll()
+    // Observe the LiveData using remember and collectAsState to get the latest data
+    val todoEntitiesState: List<TodoEntity> by todoEntities.observeAsState(emptyList())
 
 
     val formatter = navViewModel.formatter
@@ -59,7 +74,24 @@ fun CalendarScreen(navController: NavHostController) {
     val selectedDateInt = "$yearState${monthState.padStart(2, '0')}${dayState.padStart(2, '0')}".toInt()
 
     // 선택한 날짜와 같은 deadline을 갖는 Task들을 필터링
+    
+    //여기를 통해서 하려 했는데 계속 오류가 뜨네요
+//    if (todoEntitiesState.isNotEmpty()) {
+//        navViewModel.tasklist.clear()
+//        for (todoEntity in todoEntitiesState) {
+//            val name = todoEntity.name
+//            val id = todoEntity.id
+//            val importance = todoEntity.importance
+//            val completed = todoEntity.completed
+//            val once = todoEntity.once
+//            val deadline = todoEntity.deadline
+//            val time = todoEntity.timeH
+//            val task = Task(name, id, importance, completed, once, deadline, time)
+//            navViewModel.tasklist.add(task)
+//        }
+//    }
     val filteredTasks = navViewModel.tasklist.filter { it.deadline == selectedDateInt }
+
     val list =filteredTasks.map{it.name}
     var checkBoxList by remember { mutableStateOf(list.map { false }.toMutableList()) }
 //    Column {
@@ -96,6 +128,7 @@ fun CalendarScreen(navController: NavHostController) {
         item {
             Spacer(modifier = Modifier.height(16.dp)) // 16dp의 공간 추가
         }
+
 
         items(list.size) {index->
             var checked by remember { mutableStateOf(false) }

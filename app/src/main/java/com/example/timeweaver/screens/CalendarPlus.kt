@@ -137,11 +137,26 @@ fun CalendarPlus(navController: NavHostController,month: String,day:String,date:
                 onClick = {
                     if(scheduleName!=""&&estimatedTimeH!=null){
                         val task = Task(scheduleName, navViewModel.tasklist.size, importance1, false, once,deadline,timeH)
+                        val todo = TodoEntity(scheduleName, navViewModel.tasklist.size, importance1, false, once, deadline, timeH)
                         navViewModel.tasklist.add(task)
                         // Task 정보를 로그에 출력
-                        val todo = TodoEntity(id, scheduleName, estimatedTimeH.toInt(), 0, once, importance.toInt())
+
                         GlobalScope.launch(Dispatchers.IO) {
-                            todoRepository.insert(todo)
+                                val existing = todoRepository.getEntityById(1)
+                                if (existing != null) {
+                                    existing.name = scheduleName
+                                    existing.id = navViewModel.tasklist.size
+                                    existing.importance = importance1
+                                    existing.completed = false
+                                    existing.once = once
+                                    existing.deadline = deadline
+                                    existing.timeH = timeH
+                                    todoRepository.update(existing)
+                                    //여기는 업데이트 그냥 1번 자리 업데이트한다고 생각하시면 돼요
+                                }
+                                else{
+                                    todoRepository.insert(todo)
+                                }
                         }
                         Log.d("TaskAdded", "Task name: ${task.name}, ID: ${navViewModel.tasklist.size}, Importance: ${task.importance}, Completed: ${task.completed}, Once: ${task.once}, Deadline: ${task.deadline}, Time: ${task.time}")
                         navController.navigate(Routes.Calendar.route)

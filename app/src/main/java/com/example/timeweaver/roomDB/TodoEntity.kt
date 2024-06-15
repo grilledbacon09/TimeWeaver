@@ -5,12 +5,14 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "todo")
 data class TodoEntity (
+    var name: String,
     @PrimaryKey(autoGenerate = true)
-    var id: Int?,
-    var name: String?="",
-    var timeH:Int?,
-    var timeM:Int?,
+    var id: Int=0,
+    var importance:Int,
+    var completed:Boolean,
     var once:Boolean,
-    var importance:Int?
+    var deadline:Int,
+    var timeH:Int
 
 )
+

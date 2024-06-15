@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.room.InvalidationTracker
 import com.example.timeweaver.navigation.LocalNavGraphViewModelStoreOwner
 import com.example.timeweaver.navigation.NavViewModel
 import com.example.timeweaver.navigation.Routes
@@ -253,10 +254,26 @@ fun AddFixedTask(navController: NavController) {
 //                                days = listOf(daylist[i]),
 //                                duration = taskTime.toInt()
 //                            )
-                            val fixed = FixedEntity(taskName, taskStartHour.toInt(), daylist[i], taskTime.toInt())
                             GlobalScope.launch(Dispatchers.IO) {
-                                fixedRepository.insert(fixed)
+                                val existing = fixedRepository.getEntityById(1)
+                                if (existing != null) {
+                                    existing.name = taskName
+                                    existing.startH = taskStartHour.toInt()
+                                    existing.days = daylist[i]
+                                    existing.duration = taskTime.toInt()
+                                    fixedRepository.update(existing)
+                                }
+                                else{
+                                    var fixed = FixedEntity(taskName, taskStartHour.toInt(), daylist[i], taskTime.toInt())
+                                    GlobalScope.launch(Dispatchers.IO) {
+                                    fixedRepository.insert(fixed)
+                                }
+                                }
                             }
+//                            var fixed = FixedEntity(taskName, taskStartHour.toInt(), daylist[i], taskTime.toInt())
+//                            GlobalScope.launch(Dispatchers.IO) {
+//                                fixedRepository.update(existing)
+//                            }
 
                             Log.w("fixedTaskList", "${navViewModel.fixedtasklist}")
                         }

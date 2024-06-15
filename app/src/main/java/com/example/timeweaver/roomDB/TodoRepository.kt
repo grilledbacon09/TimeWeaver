@@ -13,15 +13,20 @@ class TodoRepository (db:TodoDatabase){
 
 
 
-    fun insert(todo: TodoEntity){
+    suspend fun insert(todo: TodoEntity){
         todoDAO.insert(todo)
+    }
+
+    suspend fun update(todo: TodoEntity){
+        todoDAO.update(todo)
     }
 
     fun getAll(): LiveData<List<TodoEntity>> {
         return todoDAO.getAll().map { todoEntities ->
             todoEntities.map { entity ->
-                TodoEntity(entity.id, entity.name, entity.timeH, entity.timeM,
-                    entity.once, entity.importance)
+                TodoEntity(entity.name, entity.id, entity.importance,
+                    entity.completed, entity.once, entity.deadline,
+                    entity.timeH)
             }
         }
     }
@@ -31,5 +36,9 @@ class TodoRepository (db:TodoDatabase){
         GlobalScope.launch(Dispatchers.IO) {
             todoDAO.delete(todo)
         }
+    }
+
+    suspend fun getEntityById(id: Int): TodoEntity? {
+        return todoDAO.getEntityById(id)
     }
 }
