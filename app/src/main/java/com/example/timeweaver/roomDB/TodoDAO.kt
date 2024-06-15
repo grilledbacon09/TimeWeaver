@@ -13,6 +13,10 @@ interface TodoDAO {
     @Insert
     fun insert(todo: TodoEntity)
 
+    //(onConflict = REPLACE)
+    /*@Query("SELECT * FROM todo WHERE date = :date")
+    fun getAllByDate(date: String): LiveData<List<TodoEntity>?>*/
+
     @Update
     suspend fun update(todo: TodoEntity)
 
