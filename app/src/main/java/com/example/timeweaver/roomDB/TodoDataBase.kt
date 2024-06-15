@@ -26,9 +26,7 @@ abstract class TodoDatabase : RoomDatabase() {
                 "TodoDB"
             ).build()
                 .also {
-                    {
-                        database = it
-                    }
+                    database = it
                 }
         }
 
