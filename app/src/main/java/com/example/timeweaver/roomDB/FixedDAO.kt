@@ -24,4 +24,7 @@ interface FixedDAO {
 
     @Query("SELECT * FROM FixedEntity")
     fun getAll(): LiveData<List<FixedEntity>>
+
+    @Query("SELECT * FROM FixedEntity WHERE itemId = :id")
+    suspend fun getEntityById(id: Int): FixedEntity?
 }
