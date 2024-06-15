@@ -13,6 +13,9 @@ class FixedRepository(db: FixedDatabase) {
         FixedDAO.insert(fixed)
     }
 
+    suspend fun update(fixed: FixedEntity){
+        FixedDAO.update(fixed)
+    }
 
     fun getAll(): LiveData<List<FixedEntity>> {
         return FixedDAO.getAll().map { fixedEntities ->
