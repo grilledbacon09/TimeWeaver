@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Checkbox
@@ -21,10 +22,12 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,135 +49,134 @@ import com.example.timeweaver.roomDB.FixedRepository
 import com.example.timeweaver.roomDB.TodoDatabase
 import com.example.timeweaver.roomDB.TodoEntity
 import com.example.timeweaver.roomDB.TodoRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.util.Locale
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CalendarScreen(navController: NavHostController) {
-    val navViewModel: NavViewModel = viewModel(viewModelStoreOwner = LocalNavGraphViewModelStoreOwner.current)
-//    val navViewModel: NavViewModel =
-//        viewModel(viewModelStoreOwner = LocalNavGraphViewModelStoreOwner.current)
     val context = LocalContext.current
     val database = TodoDatabase.getItemDatabase(context)
     val todoRepository = TodoRepository(database)
+    val navViewModel: NavViewModel = viewModel(LocalNavGraphViewModelStoreOwner.current)
     val todoEntities: LiveData<List<TodoEntity>> = todoRepository.getAll()
-    // Observe the LiveData using remember and collectAsState to get the latest data
     val todoEntitiesState: List<TodoEntity> by todoEntities.observeAsState(emptyList())
+    Log.d("todoentityState", "CalendarScreen: $todoEntitiesState")
 
+    val formatter = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
+    val date = remember { mutableStateOf(LocalDate.now()) }
 
-    val formatter = navViewModel.formatter
-    val date = navViewModel.date
+    val yearState = remember { mutableStateOf(date.value.year.toString()) }
+    val monthState = remember { mutableStateOf((date.value.monthValue).toString()) }
+    val dayState = remember { mutableStateOf(date.value.dayOfMonth.toString()) }
 
-    var yearState by navViewModel.yearState
-    var monthState by navViewModel.monthState
-    var dayState by navViewModel.dayState
+    val selectedDateInt = "${yearState.value}${monthState.value.padStart(2, '0')}${dayState.value.padStart(2, '0')}".toInt()
 
-//    var list = listOf("모프 제안서","실습보고서 12주차","회의록 제출","코드 개발")
-//    val list = navViewModel.tasklist.map { it.name }
-    // 선택한 날짜를 YYYYMMDD 형식의 int 값으로 변환
-    val selectedDateInt = "$yearState${monthState.padStart(2, '0')}${dayState.padStart(2, '0')}".toInt()
+    val filteredTodoEntities = todoEntitiesState.filter { it.deadline == selectedDateInt }
 
-    // 선택한 날짜와 같은 deadline을 갖는 Task들을 필터링
-    
-    //여기를 통해서 하려 했는데 계속 오류가 뜨네요
-//    if (todoEntitiesState.isNotEmpty()) {
-//        navViewModel.tasklist.clear()
-//        for (todoEntity in todoEntitiesState) {
-//            val name = todoEntity.name
-//            val id = todoEntity.id
-//            val importance = todoEntity.importance
-//            val completed = todoEntity.completed
-//            val once = todoEntity.once
-//            val deadline = todoEntity.deadline
-//            val time = todoEntity.timeH
-//            val task = Task(name, id, importance, completed, once, deadline, time)
-//            navViewModel.tasklist.add(task)
-//        }
-//    }
-    val filteredTasks = navViewModel.tasklist.filter { it.deadline == selectedDateInt }
-
-    val list =filteredTasks.map{it.name}
+    val list = filteredTodoEntities.map { it.name }
     var checkBoxList by remember { mutableStateOf(list.map { false }.toMutableList()) }
-//    Column {
-//        Text(navViewModel.tasklist[0].name)
-//    }
-
-    LazyColumn (modifier = Modifier.padding(15.dp),
-        verticalArrangement = Arrangement.Center){
+    LaunchedEffect(checkBoxList) {
+        if (filteredTodoEntities.isNotEmpty()) {
+            filteredTodoEntities.forEachIndexed { index, todoEntity ->
+                if (todoEntity.completed != checkBoxList[index]) {
+                    todoEntity.completed = checkBoxList[index]
+                    navViewModel.updateItem(todoEntity)
+                    Log.d("DatabaseUpdate", "TodoEntity: ${todoEntity.name}, Completed: ${todoEntity.completed}")
+                }
+            }
+        }
+    }
+    LazyColumn(
+        modifier = Modifier.padding(15.dp),
+        verticalArrangement = Arrangement.Center
+    ) {
         item {
             AndroidView(
                 modifier = Modifier.fillMaxWidth(),
                 factory = { CalendarView(it) }
             ) { calendarView ->
-                val selectedDate = "${yearState}-${monthState}-${dayState}"
+                val selectedDate = "${yearState.value}-${monthState.value}-${dayState.value}"
                 calendarView.date = formatter.parse(selectedDate)!!.time
-                //calendarview.date를 사용하려면 자료형이 Long Type이어야 함
-                //parse를 이용해 String을 Date로 변경
-                //time을 이용해 Long Type으로 변경
 
                 calendarView.setOnDateChangeListener { _, year, month, day ->
-                    navViewModel.yearState.value = year.toString()
-                    navViewModel.monthState.value = (month + 1).toString()
-                    navViewModel.dayState.value = day.toString()
-                }//State 추가한 이유 : LazyColumn으로 화면을 아래로 Scroll 하면 날짜 다시 초기화 됨
-
+                    yearState.value = year.toString()
+                    monthState.value = (month + 1).toString()
+                    dayState.value = day.toString()
+                }
             }
         }
 
-
         stickyHeader {
-            ScheduleHeader(month = monthState,day = dayState,
-                modifier = Modifier.padding( bottom = 20.dp))
-        }
-        item {
-            Spacer(modifier = Modifier.height(16.dp)) // 16dp의 공간 추가
-        }
-
-
-        items(list.size) {index->
-            var checked by remember { mutableStateOf(false) }
-            ScheduleItem(
-                item = list[index].toString(),
-                checked = checkBoxList[index],
-                modifier = Modifier,
-                onCheckBoxClick = {
-                    checkBoxList = checkBoxList.toMutableList().also { it[index] = !it[index] }
-                    // 체크박스 상태 변경 시, tasklist의 해당 Task 객체의 completed 속성 업데이트
-                    val task = filteredTasks[index]
-                    task.completed = checkBoxList[index]
-                    //Log.d("completed","Task '${task.name}' completed: ${task.completed}")
-
-                }
+            ScheduleHeader(
+                month = monthState.value,
+                day = dayState.value,
+                modifier = Modifier.padding(bottom = 20.dp)
             )
+        }
 
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Display tasks with the selected date as the deadline
+        itemsIndexed(filteredTodoEntities) { _, todoEntity ->
+            ScheduleItem(
+                item = todoEntity.name,
+                navViewModel = navViewModel,
+                todoEntity = todoEntity
+            )
             Divider(
                 modifier = Modifier
                     .height(1.dp)
                     .padding(horizontal = 15.dp)
             )
         }
+
         item {
-            val formattedDate = "${yearState}${monthState.padStart(2, '0')}${dayState.padStart(2, '0')}"
-            ListPlusButton(monthState,dayState,formattedDate) { monthstate,dayState,date ->
-                navController.navigate(Routes.CalendarPlus.createRoute(monthstate,dayState,date))
+            if (filteredTodoEntities.isEmpty()) {
+                Text(text = "No tasks for this date")
             }
         }
 
-    }
 
+        item {
+            val formattedDate = "${yearState.value}${monthState.value.padStart(2, '0')}${dayState.value.padStart(2, '0')}"
+            ListPlusButton(monthState.value, dayState.value, formattedDate) { monthState, dayState, date ->
+                navController.navigate(Routes.CalendarPlus.createRoute(monthState, dayState, date))
+            }
+        }
+    }
 }
 
 @Composable
-fun ScheduleItem(item:String,checked: Boolean, modifier: Modifier,onCheckBoxClick: () -> Unit) {
-    Row(modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically){
+fun ScheduleItem(
+    item: String,
+    todoEntity: TodoEntity,
+    navViewModel: NavViewModel
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(vertical = 8.dp)
+    ) {
         Checkbox(
-            checked = checked,
-            onCheckedChange = {onCheckBoxClick()})
-        Text(text = item,
-            textDecoration = if (checked) TextDecoration.LineThrough else TextDecoration.None)
+            checked = todoEntity.completed,
+            onCheckedChange = {
+                todoEntity.completed = !todoEntity.completed
+                navViewModel.updateItem(todoEntity)
+            }
+        )
+        Text(
+            text = item,
+            textDecoration = if (todoEntity.completed) TextDecoration.LineThrough else TextDecoration.None,
+            modifier = Modifier.padding(start = 8.dp)
+        )
     }
-
 }
+
 
 @Composable
 fun ScheduleHeader(month: String, day: String, modifier: Modifier) {
@@ -203,5 +205,5 @@ fun ListPlusButton(month:String,day:String,date: String, listPlus: (String,Strin
         }
 
     }
-    
+
 }

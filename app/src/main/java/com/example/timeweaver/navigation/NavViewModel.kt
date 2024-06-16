@@ -1,21 +1,37 @@
 package com.example.timeweaver.navigation
 
+import android.app.Application
 import android.icu.text.SimpleDateFormat
+import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.map
+//import androidx.lifetaskecycle.viewModelScope
+import androidx.lifecycle.viewModelScope
+import com.example.timeweaver.roomDB.FixedDatabase
+import com.example.timeweaver.roomDB.FixedEntity
+import com.example.timeweaver.roomDB.FixedRepository
+import com.example.timeweaver.roomDB.TodoDatabase
+import com.example.timeweaver.roomDB.TodoEntity
+import com.example.timeweaver.roomDB.TodoRepository
 import com.example.timeweaver.screens.FixedTask
 import com.example.timeweaver.screens.Task
 import com.example.timeweaver.screens.Freetime
 import com.example.timeweaver.screens.ScheduledTask
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-class NavViewModel: ViewModel(){
+class NavViewModel(application: Application) : AndroidViewModel(application) {
 
-    val fixedTaskArray = Array(24){ Array(7) { "" } }
-    val scheduleArray = Array(24) { Array(7) { "" } }
+    val todoRepository: TodoRepository
+    val fixedRepository: FixedRepository
 
     var tasklist = mutableStateListOf<Task>()
 
@@ -24,6 +40,125 @@ class NavViewModel: ViewModel(){
     var scheduledtasklist = mutableListOf<ScheduledTask>()
 
     var freetimelist = mutableListOf<Freetime>()
+
+    init {
+        val db = TodoDatabase.getItemDatabase(application.applicationContext)
+        todoRepository = TodoRepository(db)
+        Log.d("DatabaseLog", "TodoDatabase instance: $db")
+        fixedRepository = FixedRepository(FixedDatabase.getFixedDatabase(application))
+
+        // 데이터베이스에서 데이터를 로드한 후에 순차적으로 처리하기 위해 viewModelScope를 사용
+        viewModelScope.launch {
+            loadTasksFromDatabase()
+        }
+    }
+
+    // Function to update an item
+    fun updateItem(item: TodoEntity) {
+        viewModelScope.launch {
+            todoRepository.update(item)
+            //loadTasksFromDatabase() // Reload tasks after update
+        }
+    }
+    private suspend fun loadTasksFromDatabase() {
+        // TodoRepository에서 모든 Task 읽어오기
+        val tasks = todoRepository.getAll().value
+        Log.d("loading task", "loadTasksFromDatabase: $tasks")
+        if (tasks != null) {
+            for (todoEntity in tasks) {
+                tasklist.add(todoEntity.toTask())
+                Log.d("printing tasklist", "loadTasksFromDatabase: $tasklist")
+            }
+
+            logDatabaseContents()
+            // 데이터베이스 로딩 후 tasklist 내용 로그 출력
+            //delay(1000) // 1000밀리초(1초) 기다림
+            logTaskListContents()
+        }
+
+
+//        // FixedRepository에서 모든 FixedTask 읽어오기
+//        val fixedtasks = todoRepository.getAll().value
+//        fixedtasklist.addAll(fixedtasks.map { it.toFixedTask() })
+//    }
+
+    // TodoEntity를 Task로 변환하는 확장 함수
+//    fun TodoEntity.toTask(): Task {
+//        return Task(
+//            name = this.name,
+//            ID = this.id,
+//            once = this.once,
+//            importance = this.importance,
+//            completed = this.completed,
+//            deadline = this.deadline,
+//            time = this.timeH
+//        )
+//    }
+
+    // FixedEntity를 FixedTask로 변환하는 확장 함수
+//    fun FixedEntity.toFixedTask(): FixedTask {
+//        return FixedTask(
+//            ID = this.itemId,
+//            name = this.name,
+//            startHour = this.startH,
+//            days = this.days,
+//            duration = this.duration
+//        )
+//    }
+
+//    // 데이터베이스에서 데이터를 로드하여 tasklist에 추가하는 함수
+//    private suspend fun loadTasksFromDatabase() {
+//        Log.d("starting loading", "starting loading db")
+//        val todoList = todoRepository.todoDAO.getAll().value ?: emptyList()
+//        val fixedList = fixedRepository.FixedDAO.getAll().value ?: emptyList()
+//
+//        if(tasklist!=null)
+//        {
+//            tasklist.clear()
+//        }
+//        for ((index, todo) in todoList.withIndex()) {
+//            tasklist.add(Task(todo.name, todo.id, todo.importance, todo.completed, todo.once, todo.deadline, todo.timeH))
+//            Log.d("PushTaskListLog", "Pushing Tasklist contents: $todo")
+//
+//            // 마지막 할 일 항목인 경우 로그 출력
+//            if (index == todoList.size - 1) {
+//                Log.d("PushTaskListLog", "All todo items have been added to tasklist.")
+//            }
+//        }
+//        for (fixed in fixedList) {
+//            fixedtasklist.add(FixedTask(fixed.name, fixed.itemId, fixed.days, fixed.startH, fixed.duration))
+//        }
+
+//        logDatabaseContents()
+//        // 데이터베이스 로딩 후 tasklist 내용 로그 출력
+//
+//        logTaskListContents()
+    }
+
+    // tasklist와 fixedtasklist의 내용을 로그로 출력하는 함수
+    fun logTaskListContents() {
+        Log.d("TaskListLog", "Tasklist contents: $tasklist")
+        Log.d("TaskListLog", "FixedTasklist contents: $fixedtasklist")
+    }
+
+    fun logDatabaseContents() {
+        val dao = todoRepository.todoDAO
+        dao.getAll().observeForever { todoList ->
+            Log.d("DatabaseLog", "Todo items: $todoList")
+        }
+
+        val fixedDao = fixedRepository.FixedDAO
+        fixedDao.getAll().observeForever { fixedList ->
+            Log.d("DatabaseLog", "Fixed items: $fixedList")
+        }
+    }
+
+
+
+    val fixedTaskArray = Array(24){ Array(7) { "" } }
+    val scheduleArray = Array(24) { Array(7) { "" } }
+
+
 
     var scheduleName = mutableStateOf("")
     var estimatedTimeH = mutableStateOf("")
@@ -39,12 +174,12 @@ class NavViewModel: ViewModel(){
     var monthState = mutableStateOf(formatter.format(date).split("-")[1])
     var dayState = mutableStateOf(formatter.format(date).split("-")[2])
 
-    init {
-        tasklist.add(Task("Calendar", tasklist.size + 1, 0, false, false, 0, 0))
-        tasklist.add(Task("Fixed", tasklist.size + 1, 0, false, false, 0, 0))
-        tasklist.add(Task("Schedule", tasklist.size + 1, 0, false, false, 0, 0))
-        tasklist.add(Task("My", tasklist.size + 1, 0, false, false,  0, 0))
-    }
+//    init {
+//        tasklist.add(Task("Calendar", tasklist.size + 1, 0, false, false, 0, 0))
+//        tasklist.add(Task("Fixed", tasklist.size + 1, 0, false, false, 0, 0))
+//        tasklist.add(Task("Schedule", tasklist.size + 1, 0, false, false, 0, 0))
+//        tasklist.add(Task("My", tasklist.size + 1, 0, false, false,  0, 0))
+//    }
 
     fun addtask(name: String, ID: Int, importance: Int, completed: Boolean, once: Boolean, deadline: Int, time: Int) {
         tasklist.add(Task(name, ID, importance, completed, once, deadline, time))

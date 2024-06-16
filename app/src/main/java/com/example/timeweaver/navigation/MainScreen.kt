@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
@@ -42,6 +43,13 @@ fun Navigate(navController: NavHostController) {
     CompositionLocalProvider(LocalNavGraphViewModelStoreOwner provides navStoreOwner) {
         val navViewModel: NavViewModel =
             viewModel(viewModelStoreOwner = LocalNavGraphViewModelStoreOwner.current)
+
+        // 초기화 블록 실행 후 데이터베이스 내용을 로그로 출력
+        LaunchedEffect(Unit) {
+            //navViewModel.loadTasksFromDatabase()
+//            navViewModel.logDatabaseContents()
+//            navViewModel.logTaskListContents()
+        }
 
         Scaffold (
             bottomBar = {
