@@ -107,24 +107,24 @@ fun AddFixedTask(navController: NavController) {
     )
 
     fixedEntitiesState.forEach {
-        if (it.startH + it.duration - 1 > 23){//날짜가 넘어가면
+        if (it.startH + it.duration > 23){//날짜가 넘어가면
             if (it.days == "Sat"){ // 토-일로 넘어가면
-                for (i:Int in it.startH-1..<24){
+                for (i:Int in it.startH..<24){
                     fixedTaskArray[i][dayMap[it.days]!!] = it.name
                 }
-                for (i:Int in 0..<it.startH+it.duration-24-1){
+                for (i:Int in 0..<it.startH+it.duration-24){
                     fixedTaskArray[i][0] = it.name
                 }
             }else{ // 아니면
-                for (i:Int in it.startH-1..<24){
+                for (i:Int in it.startH..<24){
                     fixedTaskArray[i][dayMap[it.days]!!] = it.name
                 }
-                for (i:Int in 0..<it.startH+it.duration-24-1){
+                for (i:Int in 0..<it.startH+it.duration-24){
                     fixedTaskArray[i][dayMap[it.days]!!+1] = it.name
                 }
             }
         }else{//아니면
-            for (i:Int in it.startH-1..<it.startH+it.duration){
+            for (i:Int in it.startH..<it.startH+it.duration){
                 fixedTaskArray[i][dayMap[it.days]!!] = it.name
             }
         }
@@ -154,10 +154,6 @@ fun AddFixedTask(navController: NavController) {
             )
         }
 
-        //TimeInput(state = timePickerState)//추후 dropdownmenu로 수정하는 편이 좋을듯?
-        //TimeInput(state = timePickerState)//추후 dropdownmenu로 수정하는 편이 좋을듯?
-
-        //그냥 시작 시각하고 종료시각 받는 게 더 나을듯? <- 그럴거면 list에 추가하는 처리도 바꾸고 state도 따로 써야지 아무것도 안하고 그냥 시작시간에 쓰는거 그대로 복붙하면 어캄
         TimeInput(
             value1 = taskStartHour,
             onValuechange1 = {
@@ -202,12 +198,12 @@ fun AddFixedTask(navController: NavController) {
             if(taskName == "" || taskStartHour == "" || taskTime == ""){
                 Toast.makeText(context, "입력되지 않은 항목이 있습니다", Toast.LENGTH_SHORT).show()
             }
-            else if (taskStartHour.toInt() in 1..24 && taskTime.toInt() in 1..24) {
+            else if (taskStartHour.toInt() in 0..23 && taskTime.toInt() in 0..23) {
 
                 var conflict = false
 
                 for (i in 0..6){
-                    for (j:Int in taskStartHour.toInt()-1..<taskStartHour.toInt()+taskTime.toInt()-1){
+                    for (j:Int in taskStartHour.toInt()..<taskStartHour.toInt()+taskTime.toInt()){
                         if (j < 24){
                             if(fixedTaskArray[j][i] != "") conflict = true
                         }else{
@@ -282,7 +278,7 @@ fun AddFixedTask(navController: NavController) {
                     navController.navigate(Routes.Fixed.route)
                 }
             }else{
-                Toast.makeText(context, "시작시간은 1시부터 24시까지 입니다", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "시작시간은 0시부터 23시까지 입니다", Toast.LENGTH_SHORT).show()
             }
         }) {
             Text(text = "추가하기")
