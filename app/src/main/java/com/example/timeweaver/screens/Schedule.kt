@@ -54,24 +54,25 @@ fun ScheduleScreen(navController: NavHostController) {
     val fixedEntitiesState: List<FixedEntity> by fixedEntities.observeAsState(emptyList())
 
     fixedEntitiesState.forEach {
-        if (it.startH + it.duration - 1 > 23){//날짜가 넘어가면
+        Log.w("fixedTask", "$it")
+        if (it.startH + it.duration > 23){//날짜가 넘어가면
             if (it.days == "Sat"){ // 토-일로 넘어가면
-                for (i:Int in it.startH-1..<24){
+                for (i:Int in it.startH..<24){
                     fixedTaskArray[i][dayMap[it.days]!!] = it.name
                 }
-                for (i:Int in 0..<it.startH+it.duration-24-1){
+                for (i:Int in 0..<it.startH+it.duration-24){
                     fixedTaskArray[i][0] = it.name
                 }
             }else{ // 아니면
-                for (i:Int in it.startH-1..<24){
+                for (i:Int in it.startH..<24){
                     fixedTaskArray[i][dayMap[it.days]!!] = it.name
                 }
-                for (i:Int in 0..<it.startH+it.duration-24-1){
+                for (i:Int in 0..<it.startH+it.duration-24){
                     fixedTaskArray[i][dayMap[it.days]!!+1] = it.name
                 }
             }
         }else{//아니면
-            for (i:Int in it.startH-1..<it.startH+it.duration){
+            for (i:Int in it.startH..<it.startH+it.duration){
                 fixedTaskArray[i][dayMap[it.days]!!] = it.name
             }
         }
@@ -92,7 +93,7 @@ fun ScheduleScreen(navController: NavHostController) {
                                 else if (row == 0)
                                     TableCell(text = "${day[column - 1]}요일", Color.White)
                                 else if (column == 0)
-                                    TableCell(text = "${row}시", Color.White)
+                                    TableCell(text = "${row-1}시", Color.White)
                                 else {
                                     TableCell(text = "", Color.White)
                                     if (fixedTaskArray[row - 1][column - 1] != "")
