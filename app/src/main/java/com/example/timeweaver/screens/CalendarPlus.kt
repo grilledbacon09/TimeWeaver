@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -29,6 +30,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.timeweaver.navigation.LocalNavGraphViewModelStoreOwner
@@ -55,6 +57,8 @@ fun CalendarPlus(navController: NavHostController,month: String,day:String,date:
 
     val todoRepository = TodoRepository(itemdb)
 
+    val todoEntities: LiveData<List<TodoEntity>> = todoRepository.getAll()
+    val todoEntitiesState: List<TodoEntity> by todoEntities.observeAsState(emptyList())
 
     var itemId by remember {
         mutableStateOf("")
@@ -136,27 +140,20 @@ fun CalendarPlus(navController: NavHostController,month: String,day:String,date:
             Button(modifier = Modifier.padding(),
                 onClick = {
                     if(scheduleName!=""&&estimatedTimeH!=null){
-                        val task = Task(scheduleName, navViewModel.tasklist.size, importance1, false, once,deadline,timeH)
-                        val todo = TodoEntity(scheduleName, navViewModel.tasklist.size, importance1, false, once, deadline, timeH)
-                        navViewModel.tasklist.add(task)
+                        navViewModel.tasklist.clear()
+                        todoEntitiesState.forEach {
+                            navViewModel.tasklist.add(Task(it.name, it.id, it.importance, it.completed, it.once, it.deadline, it.timeH))
+                        }
+
+                        val task = Task(scheduleName, navViewModel.tasklist.size + 1, importance1, false, once,deadline,timeH)
+                        val todo = TodoEntity(scheduleName, navViewModel.tasklist.size + 1, importance1, false, once, deadline, timeH)
+
+                        navViewModel.tasklist.clear()
+
                         // Task 정보를 로그에 출력
 
                         GlobalScope.launch(Dispatchers.IO) {
-                                val existing = todoRepository.getEntityById(1)
-                                if (existing != null) {
-                                    existing.name = scheduleName
-                                    existing.id = navViewModel.tasklist.size
-                                    existing.importance = importance1
-                                    existing.completed = false
-                                    existing.once = once
-                                    existing.deadline = deadline
-                                    existing.timeH = timeH
-                                    todoRepository.update(existing)
-                                    //여기는 업데이트 그냥 1번 자리 업데이트한다고 생각하시면 돼요
-                                }
-                                else{
-                                    todoRepository.insert(todo)
-                                }
+                            todoRepository.insert(todo)
                         }
                         Log.d("TaskAdded", "Task name: ${task.name}, ID: ${navViewModel.tasklist.size}, Importance: ${task.importance}, Completed: ${task.completed}, Once: ${task.once}, Deadline: ${task.deadline}, Time: ${task.time}")
                         navController.navigate(Routes.Calendar.route)

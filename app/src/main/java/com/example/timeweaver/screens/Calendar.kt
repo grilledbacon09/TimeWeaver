@@ -127,7 +127,7 @@ fun CalendarScreen(navController: NavHostController) {
             ScheduleItem(
                 item = todoEntity.name,
                 navViewModel = navViewModel,
-                todoEntity = todoEntity
+                todoEntity = todoEntity,
             )
             Divider(
                 modifier = Modifier
@@ -158,13 +158,18 @@ fun ScheduleItem(
     todoEntity: TodoEntity,
     navViewModel: NavViewModel
 ) {
+
+    var checked by remember {
+        mutableStateOf(todoEntity.completed)
+    }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(vertical = 8.dp)
     ) {
         Checkbox(
-            checked = todoEntity.completed,
+            checked = checked,
             onCheckedChange = {
+                checked = !checked
                 todoEntity.completed = !todoEntity.completed
                 navViewModel.updateItem(todoEntity)
             }

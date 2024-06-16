@@ -33,9 +33,9 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
     val todoRepository: TodoRepository
     val fixedRepository: FixedRepository
 
-    var tasklist = mutableStateListOf<Task>()
+    var tasklist = mutableListOf<Task>()
 
-    var fixedtasklist = mutableStateListOf<FixedTask>()
+    var fixedtasklist = mutableListOf<FixedTask>()
 
     var scheduledtasklist = mutableListOf<ScheduledTask>()
 
@@ -156,7 +156,7 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
 
     val fixedTaskArray = Array(24){ Array(7) { "" } }
-    val scheduleArray = Array(24) { Array(7) { "" } }
+    var scheduleArray = Array(24) { Array(7) { "" } }
 
 
 
@@ -196,29 +196,48 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
 
 
-
+    val dayMap = mapOf(
+        "Sun" to 0,
+        "Mon" to 1,
+        "Tue" to 2,
+        "Wed" to 3,
+        "Thu" to 4,
+        "Fri" to 5,
+        "Sat" to 6
+    )
 
     fun calculateDeadline(task: Task): Int{
-        val month_days = listOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+        val month_days = intArrayOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
         val calendar = Calendar.getInstance()
         val current_year = calendar.get(Calendar.YEAR)
         val current_month = calendar.get(Calendar.MONTH)
         val current_day = calendar.get(Calendar.DAY_OF_MONTH)
 
-        val deadline_year: Int = task.deadline / 1000
-        val deadline_month: Int = (task.deadline / 10) - (deadline_year * 10)
-        val deadline_day: Int = task.deadline - (deadline_month * 10) - (deadline_year * 1000)
+        val deadline_year: Int = task.deadline / 10000
+        val deadline_month: Int = (task.deadline / 100).toInt() - (deadline_year * 100)
+        val deadline_day: Int = task.deadline - (deadline_month * 100) - (deadline_year * 10000)
 
-        var current_date = current_year * 365 + current_day
-        for (i in 0..current_month - 1){
+
+        var cyears: Int = current_year
+        if (deadline_month <= 2)
+            cyears--
+        cyears = cyears / 4 - cyears / 100 + cyears / 400
+        var current_date = cyears * 365 + current_day
+        for (i in 0..current_month){
             current_date += month_days[i]
         }
 
-        var deadline_date = deadline_year * 365 + deadline_day
+        var dyears: Int = deadline_year
+        if (deadline_month <= 2)
+            dyears--
+        dyears = dyears / 4 - dyears / 100 + dyears / 400
+        var deadline_date = dyears * 365 + deadline_day
+
         for (i in 0..deadline_month - 1){
             deadline_date += month_days[i]
         }
+
         if (deadline_date < current_date)
             return -1
         else
@@ -253,12 +272,12 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
 
     fun createSchedule(){
-        scheduledtasklist = mutableListOf<ScheduledTask>()
-        freetimelist = mutableListOf<Freetime>()
+        //scheduledtasklist.clear()
+        //freetimelist.clear()
 
         var daylist = mutableMapOf(Pair("Sun", 0), Pair("Mon", 0), Pair("Tue", 0), Pair("Wed", 0), Pair("Thu", 0), Pair("Fri", 0), Pair("Sat", 0))
         for (day in daylist) {
-            freetimelist.add(Freetime(day.key, 0, 1440))
+            freetimelist.add(Freetime(day.key, 0, 24))
         }
         for (fixedtask in fixedtasklist){
             var flag: Boolean = false
@@ -307,13 +326,17 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
         for (task in tasklist){
             if (!task.completed){
+
                 daylist = daylist.toList().sortedBy { it.second }.toMap().toMutableMap()
                 val day: String = daylist.toList().first().first
                 var dflag = false
 
                 for (freetime in freetimelist){
+
                     if (freetime.day == day) {
+
                         if (task.importance >= 80) {
+
                             if (task.once) {
                                 if (task.time <= freetime.length) {
                                     scheduledtasklist.add(ScheduledTask(task.name,scheduledtaskID++,freetime.day,freetime.startTime,task.time))
@@ -330,15 +353,13 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
                                     total_freetime -= task.time
 
-                                    task.time = 0
-                                    task.completed = true
-
                                     dflag = true
                                     break
                                 }
                             }
 
                             if (task.once == false && task.time <= freetime.length) {
+
                                 scheduledtasklist.add(ScheduledTask(task.name,scheduledtaskID++,freetime.day,freetime.startTime,task.time))
                                 val day_task_num = daylist.get(day)
                                 var task_num = 0
@@ -352,9 +373,6 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
                                     freetimelist.remove(freetime)
 
                                 total_freetime -= task.time
-
-                                task.time = 0
-                                task.completed = true
 
                                 dflag = true
                                 break
@@ -380,7 +398,6 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
                                     freetimelist.remove(freetime)
 
                                 total_freetime -= time_this_week
-                                task.time -= time_this_week
 
                                 dflag = true
                                 break
@@ -389,7 +406,7 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
                         else if (task.once == false){
                             val importance_weight: Float = (task.importance / importance_sum).toFloat()
-                            val time_this_week = Math.min(total_freetime, (Math.round(task.time * importance_weight) / 60) * 60)
+                            val time_this_week = Math.min(total_freetime, Math.round(task.time * importance_weight))
 
                             if (time_this_week == 0)
                                 break
@@ -406,7 +423,6 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
                                 freetimelist.remove(freetime)
 
                             total_freetime -= time_this_week
-                            task.time -= time_this_week
 
                             dflag = true
                             break
@@ -435,8 +451,6 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
                                 total_freetime -= task.time
 
-                                task.time = 0
-                                task.completed = true
                                 break
                             }
                         }
@@ -459,8 +473,6 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
                                 total_freetime -= task.time
 
-                                task.time = 0
-                                task.completed = true
                                 break
                             }
                         }
@@ -487,8 +499,6 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
                                 total_freetime -= task.time
 
-                                task.time = 0
-                                task.completed = true
                                 break
                             }
                             else{
@@ -498,7 +508,6 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
                                 day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
                                 daylist.set(freetime.day, task_num)
 
-                                task.time -= freetime.length
                                 total_freetime -= freetime.length
 
                                 freetime.length = 0
@@ -530,8 +539,6 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
                                     total_freetime -= time_this_week
 
-                                    task.time -= time_this_week
-                                    time_this_week = 0
                                     break
                                 }
                             }
@@ -558,8 +565,6 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
                                     total_freetime -= task.time
 
-                                    task.time -= time_this_week
-                                    time_this_week = 0
                                     break
                                 }
                                 else{
@@ -571,7 +576,6 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
                                     time_this_week -= freetime.length
                                     total_freetime -= freetime.length
-                                    task.time -= time_this_week
 
                                     freetime.length = 0
                                     freetimelist.remove(freetime)
@@ -582,7 +586,7 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
                     else if (task.time < weekly_freetime && task.importance >= 60){                                   //If you have enough time
                         if (task.once == false){
-                            var time_this_week = Math.min(total_freetime, (task.time / 2 / 60) * 60)
+                            var time_this_week = Math.min(total_freetime, (task.time / 2))
 
                             if (time_this_week == 0)
                                 continue
@@ -602,8 +606,6 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
                                     total_freetime -= time_this_week
 
-                                    task.time -= time_this_week
-                                    time_this_week = 0
                                     break
                                 }
                             }
@@ -628,8 +630,6 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
                                         total_freetime -= time_this_week
 
-                                        task.time -= time_this_week
-                                        time_this_week = 0
                                         break
                                     }
                                     else{
@@ -641,7 +641,6 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
                                         time_this_week -= freetime.length
                                         total_freetime -= freetime.length
-                                        task.time -= time_this_week
 
                                         freetime.length = 0
                                         freetimelist.remove(freetime)
@@ -654,7 +653,7 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
                     else {                                                                   //If you have enough time
                         if (task.once == false){
                             val importance_weight: Float = (task.importance / importance_sum).toFloat()
-                            var time_this_week = Math.min(total_freetime, (Math.round(task.time * importance_weight) / 60) * 60)
+                            var time_this_week = Math.min(total_freetime, Math.round(task.time * importance_weight))
 
                             if (time_this_week == 0)
                                 continue
@@ -674,8 +673,6 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
                                     total_freetime -= time_this_week
 
-                                    task.time -= time_this_week
-                                    time_this_week = 0
                                     break
                                 }
                             }
@@ -700,8 +697,6 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
                                         total_freetime -= time_this_week
 
-                                        task.time -= time_this_week
-                                        time_this_week = 0
                                         break
                                     }
                                     else{
@@ -713,7 +708,6 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
                                         time_this_week -= freetime.length
                                         total_freetime -= freetime.length
-                                        task.time -= time_this_week
 
                                         freetime.length = 0
                                         freetimelist.remove(freetime)
@@ -724,6 +718,31 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
             }
+        }
+    }
+
+    fun fillSchedule(){
+        scheduleArray = Array(24) { Array(7) { "" } }
+
+        Log.i("fillschedule", "1")
+
+        scheduledtasklist.forEach {
+            Log.i("fillschedule", "3")
+            val startTime = it.startTime
+            val endTime = startTime + it.length
+
+            for (j: Int in startTime..<endTime) {
+                if (j < 23) {
+                    scheduleArray[j][dayMap[it.day]!!] = it.name
+                } else {
+                    if (it.day == "Sat") {
+                        scheduleArray[j - 23][0] = it.name
+                    } else {
+                        scheduleArray[j - 23][dayMap[it.day]?.plus(1)!!] = it.name
+                    }
+                }
+            }
+            Log.i("fillschedule", "4")
         }
     }
 }

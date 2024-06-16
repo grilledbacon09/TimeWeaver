@@ -6,15 +6,23 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -24,6 +32,9 @@ import com.example.timeweaver.navigation.Routes
 import com.example.timeweaver.roomDB.FixedDatabase
 import com.example.timeweaver.roomDB.FixedEntity
 import com.example.timeweaver.roomDB.FixedRepository
+import com.example.timeweaver.roomDB.TodoDatabase
+import com.example.timeweaver.roomDB.TodoEntity
+import com.example.timeweaver.roomDB.TodoRepository
 
 @Composable
 fun ScheduleScreen(navController: NavHostController) {
@@ -44,7 +55,7 @@ fun ScheduleScreen(navController: NavHostController) {
         "Sat" to 6
     )
     val fixedTaskArray = Array(24){ Array(7) { "" } }
-    val scheduleArray = Array(24) { Array(7) { "" } }
+    val scheduleArray = navViewModel.scheduleArray
 
     val context = LocalContext.current
     val database = FixedDatabase.getFixedDatabase(context)
@@ -53,29 +64,37 @@ fun ScheduleScreen(navController: NavHostController) {
     // Observe the LiveData using remember and collectAsState to get the latest data
     val fixedEntitiesState: List<FixedEntity> by fixedEntities.observeAsState(emptyList())
 
+    val todoDatabase = TodoDatabase.getItemDatabase(context)
+    val todoRepository = TodoRepository(todoDatabase)
+    val todoEntities: LiveData<List<TodoEntity>> = todoRepository.getAll()
+    val todoEntitiesState: List<TodoEntity> by todoEntities.observeAsState(emptyList())
+
     fixedEntitiesState.forEach {
-        if (it.startH + it.duration - 1 > 23){//날짜가 넘어가면
+        Log.w("fixedTask", "$it")
+        if (it.startH + it.duration > 23){//날짜가 넘어가면
             if (it.days == "Sat"){ // 토-일로 넘어가면
-                for (i:Int in it.startH-1..<24){
+                for (i:Int in it.startH..<24){
                     fixedTaskArray[i][dayMap[it.days]!!] = it.name
                 }
-                for (i:Int in 0..<it.startH+it.duration-24-1){
+                for (i:Int in 0..<it.startH+it.duration-24){
                     fixedTaskArray[i][0] = it.name
                 }
             }else{ // 아니면
-                for (i:Int in it.startH-1..<24){
+                for (i:Int in it.startH..<24){
                     fixedTaskArray[i][dayMap[it.days]!!] = it.name
                 }
-                for (i:Int in 0..<it.startH+it.duration-24-1){
+                for (i:Int in 0..<it.startH+it.duration-24){
                     fixedTaskArray[i][dayMap[it.days]!!+1] = it.name
                 }
             }
         }else{//아니면
-            for (i:Int in it.startH-1..<it.startH+it.duration){
+            for (i:Int in it.startH..<it.startH+it.duration){
                 fixedTaskArray[i][dayMap[it.days]!!] = it.name
             }
         }
     }
+
+
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -92,7 +111,7 @@ fun ScheduleScreen(navController: NavHostController) {
                                 else if (row == 0)
                                     TableCell(text = "${day[column - 1]}요일", Color.White)
                                 else if (column == 0)
-                                    TableCell(text = "${row}시", Color.White)
+                                    TableCell(text = "${row-1}시", Color.White)
                                 else {
                                     TableCell(text = "", Color.White)
                                     if (fixedTaskArray[row - 1][column - 1] != "")
@@ -111,6 +130,48 @@ fun ScheduleScreen(navController: NavHostController) {
                     }
                 }
             }
+
+            RenewSchedule {
+                navViewModel.tasklist.clear()
+                navViewModel.fixedtasklist.clear()
+
+                todoEntitiesState.forEach {
+                    navViewModel.tasklist.add(Task(it.name, it.id, it.importance, it.completed, it.once, it.deadline, it.timeH))
+                }
+
+                fixedEntitiesState.forEach {
+                    navViewModel.fixedtasklist.add(FixedTask(it.name, it.itemId, it.days, it.startH, it.duration))
+                }
+
+                navViewModel.scheduledtasklist.clear()
+                navViewModel.freetimelist.clear()
+                navViewModel.updateImportance()
+                navViewModel.createSchedule()
+                navViewModel.fillSchedule()
+                navController.navigate(Routes.Schedule.route){
+                    launchSingleTop = true
+                }
+            }
+
+        }
+    }
+}
+
+
+@Composable
+fun RenewSchedule(renew: () -> Unit) {
+    Box (modifier = Modifier.fillMaxSize()){
+        FloatingActionButton(
+            modifier = Modifier
+                .padding(16.dp)
+                .size(50.dp)
+                .align(Alignment.BottomEnd),
+            onClick = renew
+        ) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = "refreshes schedule"
+            )
         }
     }
 }
