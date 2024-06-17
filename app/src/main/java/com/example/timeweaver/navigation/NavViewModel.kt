@@ -206,6 +206,31 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
         "Sat" to 6
     )
 
+    val revDayMap = mapOf(
+        0 to "Sun",
+        1 to "Mon",
+        2 to "Tue",
+        3 to "Wed",
+        4 to "Thu",
+        5 to "Fri",
+        6 to "Sat"
+    )
+
+    fun getDayOfWeek(): Int{
+        val calendar = Calendar.getInstance()
+        val currentDayOfWeek: Int = calendar.get(Calendar.DAY_OF_WEEK)
+
+        return currentDayOfWeek - 1
+    }
+
+    fun getDueDayOfWeek(add: Int): Int{
+        val calendar = Calendar.getInstance()
+        val currentDayOfWeek: Int = calendar.get(Calendar.DAY_OF_WEEK)
+
+        return (currentDayOfWeek + add - 1) % 7
+    }
+
+
     fun calculateDeadline(task: Task): Int{
         val month_days = intArrayOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
@@ -251,6 +276,15 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
                 if (days_deadline == -1) {
                     task.completed = true
                 }
+                else if (days_deadline <= 1){
+                    task.importance = 99
+                }
+                else if (days_deadline <= 3){
+                    task.importance = 95
+                }
+                else if (days_deadline <= 5){
+                    task.importance = 85 + (task.importance - ((task.importance / 10).toInt() * 10))
+                }
                 else if (days_deadline <= 7){
                     task.importance = 80 + (task.importance - ((task.importance / 10).toInt() * 10))
                 }
@@ -282,7 +316,9 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
         for (fixedtask in fixedtasklist){
             var flag: Boolean = false
             for (freetime in freetimelist){
-                if (fixedtask.day == freetime.day && fixedtask.startTime == freetime.startTime){
+                if (fixedtask.day == freetime.day &&
+                    fixedtask.startTime == freetime.startTime &&
+                    fixedtask.length <= freetime.length){
                     freetime.startTime += fixedtask.length
                     freetime.length -= fixedtask.length
                     if (freetime.length == 0)
@@ -293,14 +329,23 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
             }
             if (flag == false){
                 for (freetime in freetimelist){
-                    if(freetime.startTime < fixedtask.startTime && fixedtask.startTime < freetime.startTime + freetime.length){
+                    if(fixedtask.day == freetime.day &&
+                        freetime.startTime < fixedtask.startTime &&
+                        fixedtask.startTime + fixedtask.length <= freetime.startTime + freetime.length){
+
                         freetime.length = fixedtask.startTime - freetime.startTime
                         if (freetime.length == 0)
                             freetimelist.remove(freetime)
 
-                        freetimelist.add(Freetime(freetime.day,
-                            fixedtask.startTime + fixedtask.length,
-                            (freetime.startTime + freetime.length) - (fixedtask.startTime + fixedtask.length)))
+                        if ((freetime.startTime + freetime.length) - (fixedtask.startTime + fixedtask.length) != 0) {
+                            freetimelist.add(
+                                Freetime(
+                                    freetime.day,
+                                    fixedtask.startTime + fixedtask.length,
+                                    (freetime.startTime + freetime.length) - (fixedtask.startTime + fixedtask.length)
+                                )
+                            )
+                        }
                         break
                     }
                 }
@@ -326,16 +371,33 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
         for (task in tasklist){
             if (!task.completed){
+                val currentDayOfWeek = getDayOfWeek()
 
                 daylist = daylist.toList().sortedBy { it.second }.toMap().toMutableMap()
-                val day: String = daylist.toList().first().first
+                var day: String = ""
+                for (i: Int in 0..6) {
+                    day = daylist.toList()[i].first
+                    Log.d("findingday", "$day")
+                    if (currentDayOfWeek <= dayMap.get(day)!!){
+                        break
+                    }
+                }
                 var dflag = false
+                Log.d("finalday", "$day")
 
                 for (freetime in freetimelist){
 
                     if (freetime.day == day) {
 
                         if (task.importance >= 80) {
+                            if (dayMap[freetime.day]!! < currentDayOfWeek){
+                                continue
+                            }
+                            val dueDayofWeek = getDueDayOfWeek(calculateDeadline(task))
+                            Log.d("dueday", "$dueDayofWeek")
+                            if (dayMap[freetime.day]!! > dueDayofWeek) {
+                                continue
+                            }
 
                             if (task.once) {
                                 if (task.time <= freetime.length) {
@@ -379,54 +441,31 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
                             }
                         }
 
-                        else if (task.importance >= 60 && task.once == false) {
-                            val time_this_week = Math.min(total_freetime, (task.time / 2 / 60) * 60)
+                        else if (task.importance >= 60  && task.time <= freetime.length) {
+                            if (dayMap[freetime.day]!! < currentDayOfWeek){
+                                continue
+                            }
 
-                            if (time_this_week == 0)
-                                break
-
-                            if (time_this_week <= freetime.length){
-                                scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, time_this_week))
+                            if (task.time <= freetime.length) {
+                                scheduledtasklist.add(ScheduledTask(task.name,scheduledtaskID++,freetime.day,freetime.startTime,task.time))
                                 val day_task_num = daylist.get(day)
                                 var task_num = 0
-                                day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
+                                day_task_num?.let { task_num = day_task_num + 1 }
+                                    ?: let { task_num = 0 };
                                 daylist.set(day, task_num)
 
-                                freetime.startTime += time_this_week
-                                freetime.length -= time_this_week
+                                freetime.startTime += task.time
+                                freetime.length -= task.time
                                 if (freetime.length == 0)
                                     freetimelist.remove(freetime)
 
-                                total_freetime -= time_this_week
+                                total_freetime -= task.time
 
                                 dflag = true
                                 break
                             }
                         }
 
-                        else if (task.once == false){
-                            val importance_weight: Float = (task.importance / importance_sum).toFloat()
-                            val time_this_week = Math.min(total_freetime, Math.round(task.time * importance_weight))
-
-                            if (time_this_week == 0)
-                                break
-
-                            scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, time_this_week))
-                            val day_task_num = daylist.get(day)
-                            var task_num = 0
-                            day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
-                            daylist.set(day, task_num)
-
-                            freetime.startTime += time_this_week
-                            freetime.length -= time_this_week
-                            if (freetime.length == 0)
-                                freetimelist.remove(freetime)
-
-                            total_freetime -= time_this_week
-
-                            dflag = true
-                            break
-                        }
                     }
                 }
 
@@ -435,8 +474,17 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
 
                 if (task.importance >= 80){                                             //Task must be finished this week
+
                     if (task.once){                                                     //Must finish task at once
                         for (freetime in freetimelist){
+                            if (dayMap[freetime.day]!! < currentDayOfWeek){
+                                continue
+                            }
+                            val dueDayofWeek = getDueDayOfWeek(calculateDeadline(task))
+                            if (dayMap[freetime.day]!! > dueDayofWeek) {
+                                continue
+                            }
+
                             if (task.time <= freetime.length){
                                 scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, task.time))
                                 val day_task_num = daylist.get(freetime.day)
@@ -459,6 +507,14 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
                     if (task.once == false){                                            //Do not need to, but still finish task at once for convenience
                         for (freetime in freetimelist){
+                            if (dayMap[freetime.day]!! < currentDayOfWeek){
+                                continue
+                            }
+                            val dueDayofWeek = getDueDayOfWeek(calculateDeadline(task))
+                            if (dayMap[freetime.day]!! > dueDayofWeek) {
+                                continue
+                            }
+
                             if (task.time <= freetime.length){
                                 scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, task.time))
                                 val day_task_num = daylist.get(freetime.day)
@@ -482,6 +538,15 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
                     if (task.time != 0 && task.once == false){                          //Task cannot be finished at once, so divide into multiple sessions
                         var time_sum = 0
                         for (freetime in freetimelist){
+                            if (dayMap[freetime.day]!! < currentDayOfWeek){
+                                continue
+                            }
+                            val dueDayofWeek = getDueDayOfWeek(calculateDeadline(task))
+                            if (dayMap[freetime.day]!! > dueDayofWeek) {
+                                continue
+                            }
+
+
                             if (freetime.length == 0)
                                 continue
 
@@ -520,24 +585,26 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
 
                 else if (total_freetime != 0){
-                    if (task.time > weekly_freetime && task.importance >= 60){          //Task is due next week and cannot finish in one week
-                        var time_this_week = Math.min(total_freetime, (task.time - weekly_freetime) * 2)
-
-                        if (task.once == false){
+                    if (task.importance >= 60){
+                        if (task.once){
                             for (freetime in freetimelist){
-                                if (time_this_week <= freetime.length){
-                                    scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, time_this_week))
+                                if (dayMap[freetime.day]!! < currentDayOfWeek){
+                                    continue
+                                }
+
+                                if (task.time <= freetime.length){
+                                    scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, task.time))
                                     val day_task_num = daylist.get(freetime.day)
                                     var task_num = 0
                                     day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
                                     daylist.set(freetime.day, task_num)
 
-                                    freetime.startTime += time_this_week
-                                    freetime.length -= time_this_week
+                                    freetime.startTime += task.time
+                                    freetime.length -= task.time
                                     if (freetime.length == 0)
                                         freetimelist.remove(freetime)
 
-                                    total_freetime -= time_this_week
+                                    total_freetime -= task.time
 
                                     break
                                 }
@@ -545,15 +612,45 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
                             continue
                         }
 
-                        if (time_this_week != 0 && task.once == false){
+                        if (task.once == false){                                            //Do not need to, but still finish task at once for convenience
+                            for (freetime in freetimelist){
+                                if (dayMap[freetime.day]!! < currentDayOfWeek){
+                                    continue
+                                }
+
+                                if (task.time <= freetime.length){
+                                    scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, task.time))
+                                    val day_task_num = daylist.get(freetime.day)
+                                    var task_num = 0
+                                    day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
+                                    daylist.set(freetime.day, task_num)
+
+                                    freetime.startTime += task.time
+                                    freetime.length -= task.time
+                                    if (freetime.length == 0)
+                                        freetimelist.remove(freetime)
+
+                                    total_freetime -= task.time
+
+                                    break
+                                }
+                            }
+                            continue
+                        }
+
+                        if (task.time != 0 && task.once == false){                          //Task cannot be finished at once, so divide into multiple sessions
                             var time_sum = 0
                             for (freetime in freetimelist){
+                                if (dayMap[freetime.day]!! < currentDayOfWeek){
+                                    continue
+                                }
+
                                 if (freetime.length == 0)
                                     continue
 
                                 time_sum += freetime.length
-                                if (time_sum >= time_this_week){
-                                    scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, time_this_week))
+                                if (time_sum >= task.time){
+                                    scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, task.time))
                                     val day_task_num = daylist.get(freetime.day)
                                     var task_num = 0
                                     day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
@@ -574,147 +671,18 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
                                     day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
                                     daylist.set(freetime.day, task_num)
 
-                                    time_this_week -= freetime.length
                                     total_freetime -= freetime.length
 
                                     freetime.length = 0
                                     freetimelist.remove(freetime)
                                 }
+
                             }
                         }
                     }
 
-                    else if (task.time < weekly_freetime && task.importance >= 60){                                   //If you have enough time
-                        if (task.once == false){
-                            var time_this_week = Math.min(total_freetime, (task.time / 2))
-
-                            if (time_this_week == 0)
-                                continue
-
-                            for (freetime in freetimelist){
-                                if (time_this_week <= freetime.length){
-                                    scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, time_this_week))
-                                    val day_task_num = daylist.get(freetime.day)
-                                    var task_num = 0
-                                    day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
-                                    daylist.set(freetime.day, task_num)
-
-                                    freetime.startTime += time_this_week
-                                    freetime.length -= time_this_week
-                                    if (freetime.length == 0)
-                                        freetimelist.remove(freetime)
-
-                                    total_freetime -= time_this_week
-
-                                    break
-                                }
-                            }
-
-                            if(time_this_week != 0){
-                                var time_sum = 0
-                                for (freetime in freetimelist){
-                                    if (freetime.length == 0)
-                                        continue
-
-                                    time_sum += freetime.length
-                                    if (time_sum >= time_this_week){
-                                        scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, time_this_week))
-                                        val day_task_num = daylist.get(freetime.day)
-                                        var task_num = 0
-                                        day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
-                                        daylist.set(freetime.day, task_num)
-
-                                        freetime.length -= time_this_week
-                                        if (freetime.length == 0)
-                                            freetimelist.remove(freetime)
-
-                                        total_freetime -= time_this_week
-
-                                        break
-                                    }
-                                    else{
-                                        scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, freetime.length))
-                                        val day_task_num = daylist.get(freetime.day)
-                                        var task_num = 0
-                                        day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
-                                        daylist.set(freetime.day, task_num)
-
-                                        time_this_week -= freetime.length
-                                        total_freetime -= freetime.length
-
-                                        freetime.length = 0
-                                        freetimelist.remove(freetime)
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    else {                                                                   //If you have enough time
-                        if (task.once == false){
-                            val importance_weight: Float = (task.importance / importance_sum).toFloat()
-                            var time_this_week = Math.min(total_freetime, Math.round(task.time * importance_weight))
-
-                            if (time_this_week == 0)
-                                continue
-
-                            for (freetime in freetimelist){
-                                if (time_this_week <= freetime.length){
-                                    scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, time_this_week))
-                                    val day_task_num = daylist.get(freetime.day)
-                                    var task_num = 0
-                                    day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
-                                    daylist.set(freetime.day, task_num)
-
-                                    freetime.startTime += time_this_week
-                                    freetime.length -= time_this_week
-                                    if (freetime.length == 0)
-                                        freetimelist.remove(freetime)
-
-                                    total_freetime -= time_this_week
-
-                                    break
-                                }
-                            }
-
-                            if(time_this_week != 0){
-                                var time_sum = 0
-                                for (freetime in freetimelist){
-                                    if (freetime.length == 0)
-                                        continue
-
-                                    time_sum += freetime.length
-                                    if (time_sum >= time_this_week){
-                                        scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, time_this_week))
-                                        val day_task_num = daylist.get(freetime.day)
-                                        var task_num = 0
-                                        day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
-                                        daylist.set(freetime.day, task_num)
-
-                                        freetime.length -= time_this_week
-                                        if (freetime.length == 0)
-                                            freetimelist.remove(freetime)
-
-                                        total_freetime -= time_this_week
-
-                                        break
-                                    }
-                                    else{
-                                        scheduledtasklist.add(ScheduledTask(task.name, scheduledtaskID++, freetime.day, freetime.startTime, freetime.length))
-                                        val day_task_num = daylist.get(freetime.day)
-                                        var task_num = 0
-                                        day_task_num?.let { task_num = day_task_num + 1 } ?:let { task_num = 0 };
-                                        daylist.set(freetime.day, task_num)
-
-                                        time_this_week -= freetime.length
-                                        total_freetime -= freetime.length
-
-                                        freetime.length = 0
-                                        freetimelist.remove(freetime)
-                                    }
-                                }
-                            }
-                        }
+                    else {
+                        continue
                     }
                 }
             }

@@ -95,7 +95,6 @@ fun ScheduleScreen(navController: NavHostController) {
     }
 
 
-
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -134,20 +133,22 @@ fun ScheduleScreen(navController: NavHostController) {
             RenewSchedule {
                 navViewModel.tasklist.clear()
                 navViewModel.fixedtasklist.clear()
-
                 todoEntitiesState.forEach {
                     navViewModel.tasklist.add(Task(it.name, it.id, it.importance, it.completed, it.once, it.deadline, it.timeH))
                 }
-
                 fixedEntitiesState.forEach {
                     navViewModel.fixedtasklist.add(FixedTask(it.name, it.itemId, it.days, it.startH, it.duration))
                 }
+
 
                 navViewModel.scheduledtasklist.clear()
                 navViewModel.freetimelist.clear()
                 navViewModel.updateImportance()
                 navViewModel.createSchedule()
                 navViewModel.fillSchedule()
+
+                navViewModel.tasklist.clear()
+                navViewModel.fixedtasklist.clear()
                 navController.navigate(Routes.Schedule.route){
                     launchSingleTop = true
                 }
