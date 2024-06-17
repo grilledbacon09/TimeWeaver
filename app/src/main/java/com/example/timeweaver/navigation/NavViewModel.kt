@@ -441,7 +441,7 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
                             }
                         }
 
-                        else if (task.importance >= 60  && task.time <= freetime.length) {
+                        else if (task.importance >= 65  && task.time <= freetime.length) {
                             if (dayMap[freetime.day]!! < currentDayOfWeek){
                                 continue
                             }
@@ -585,7 +585,7 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
 
                 else if (total_freetime != 0){
-                    if (task.importance >= 60){
+                    if (task.importance >= 65){
                         if (task.once){
                             for (freetime in freetimelist){
                                 if (dayMap[freetime.day]!! < currentDayOfWeek){
