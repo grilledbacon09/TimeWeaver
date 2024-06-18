@@ -139,7 +139,7 @@ fun ScheduleScreen(navController: NavHostController) {
                         }
                         red = (red + 50) % 256
                         green = (green + 30) % 120
-                        blue = (blue + 10) % 50
+                        blue = (blue + 11) % 50
                     }
                 }
             }
