@@ -404,8 +404,9 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
                             }
                             val dueDayofWeek = getDueDayOfWeek(calculateDeadline(task))
                             Log.d("dueday", "$dueDayofWeek")
-                            if (dayMap[freetime.day]!! > dueDayofWeek && currentDayOfWeek < dueDayofWeek) {
-                                continue
+                            if (dayMap[freetime.day]!! > dueDayofWeek) {
+                                if (dueDayofWeek - currentDayOfWeek >= 0)
+                                    continue
                             }
 
                             if (task.once) {
