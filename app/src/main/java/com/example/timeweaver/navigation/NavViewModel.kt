@@ -156,7 +156,7 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
 
 
     val fixedTaskArray = Array(24){ Array(7) { "" } }
-    var scheduleArray = Array(24) { Array(7) { "" } }
+    var scheduleArray = Array(24) { Array(7) { Array(2) {""} } }
 
 
 
@@ -279,6 +279,9 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
                 else if (days_deadline <= 1){
                     task.importance = 99
                 }
+                else if (days_deadline <= 2){
+                    task.importance = 97
+                }
                 else if (days_deadline <= 3){
                     task.importance = 95
                 }
@@ -332,17 +335,18 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
                     if(fixedtask.day == freetime.day &&
                         freetime.startTime < fixedtask.startTime &&
                         fixedtask.startTime + fixedtask.length <= freetime.startTime + freetime.length){
+                        val templength = freetime.length
 
                         freetime.length = fixedtask.startTime - freetime.startTime
                         if (freetime.length == 0)
                             freetimelist.remove(freetime)
 
-                        if ((freetime.startTime + freetime.length) - (fixedtask.startTime + fixedtask.length) != 0) {
+                        if ((freetime.startTime + templength) - (fixedtask.startTime + fixedtask.length) > 0) {
                             freetimelist.add(
                                 Freetime(
                                     freetime.day,
                                     fixedtask.startTime + fixedtask.length,
-                                    (freetime.startTime + freetime.length) - (fixedtask.startTime + fixedtask.length)
+                                    (freetime.startTime + templength) - (fixedtask.startTime + fixedtask.length)
                                 )
                             )
                         }
@@ -386,6 +390,11 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
                 Log.d("finalday", "$day")
 
                 for (freetime in freetimelist){
+                    if (freetime.day == day)
+                        Log.d("freetimeInDay", "${freetime.startTime} & ${freetime.length}")
+                }
+
+                for (freetime in freetimelist){
 
                     if (freetime.day == day) {
 
@@ -395,7 +404,7 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
                             }
                             val dueDayofWeek = getDueDayOfWeek(calculateDeadline(task))
                             Log.d("dueday", "$dueDayofWeek")
-                            if (dayMap[freetime.day]!! > dueDayofWeek) {
+                            if (dayMap[freetime.day]!! > dueDayofWeek && currentDayOfWeek < dueDayofWeek) {
                                 continue
                             }
 
@@ -690,27 +699,27 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun fillSchedule(){
-        scheduleArray = Array(24) { Array(7) { "" } }
+        scheduleArray = Array(24) { Array(7) { Array(2) {""} } }
 
-        Log.i("fillschedule", "1")
 
         scheduledtasklist.forEach {
-            Log.i("fillschedule", "3")
             val startTime = it.startTime
             val endTime = startTime + it.length
 
             for (j: Int in startTime..<endTime) {
                 if (j < 23) {
-                    scheduleArray[j][dayMap[it.day]!!] = it.name
+                    scheduleArray[j][dayMap[it.day]!!][0] = it.name
+                    scheduleArray[j][dayMap[it.day]!!][1] = it.ID.toString()
                 } else {
                     if (it.day == "Sat") {
-                        scheduleArray[j - 23][0] = it.name
+                        scheduleArray[j - 23][0][0] = it.name
+                        scheduleArray[j - 23][0][1] = it.ID.toString()
                     } else {
-                        scheduleArray[j - 23][dayMap[it.day]?.plus(1)!!] = it.name
+                        scheduleArray[j - 23][dayMap[it.day]?.plus(1)!!][0] = it.name
+                        scheduleArray[j - 23][dayMap[it.day]?.plus(1)!!][1] = it.ID.toString()
                     }
                 }
             }
-            Log.i("fillschedule", "4")
         }
     }
 }

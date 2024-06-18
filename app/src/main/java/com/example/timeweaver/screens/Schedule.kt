@@ -94,6 +94,10 @@ fun ScheduleScreen(navController: NavHostController) {
         }
     }
 
+    var scheduleIDs = Array(7){ 0 }
+    var red = 0xFF
+    var green = 0x80
+    var blue = 0
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -118,14 +122,24 @@ fun ScheduleScreen(navController: NavHostController) {
                                             text = fixedTaskArray[row - 1][column - 1],
                                             color = Color.LightGray
                                         )
-                                    else if (scheduleArray[row-1][column-1] != "")
+                                    else if (scheduleArray[row-1][column-1][0] != "") {
+                                        if (scheduleIDs[column - 1] != scheduleArray[row-1][column-1][1].toInt()){
+                                            red = (red + 150) % 256
+                                            green = (green + 100) % 256
+                                            blue = (blue + 50) % 256
+                                        }
+                                        scheduleIDs[column - 1] = scheduleArray[row-1][column-1][1].toInt()
                                         TableCell(
-                                            text = scheduleArray[row-1][column-1],
-                                            color = Color.Red
+                                            text = scheduleArray[row - 1][column - 1][0],
+                                            color = Color(0xFF000000 + red.shl(16) + green.shl(8) + blue)
                                         )
+                                    }
                                 }
                             }
                         }
+                        red = (red + 50) % 256
+                        green = (green + 30) % 120
+                        blue = (blue + 10) % 50
                     }
                 }
             }
