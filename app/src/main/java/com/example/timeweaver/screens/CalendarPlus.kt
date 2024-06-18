@@ -1,6 +1,7 @@
 package com.example.timeweaver.screens
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -59,6 +60,7 @@ fun CalendarPlus(navController: NavHostController,month: String,day:String,date:
 
     val todoEntities: LiveData<List<TodoEntity>> = todoRepository.getAll()
     val todoEntitiesState: List<TodoEntity> by todoEntities.observeAsState(emptyList())
+    var importanceError by remember { mutableStateOf("") }
 
     var itemId by remember {
         mutableStateOf("")
@@ -137,28 +139,39 @@ fun CalendarPlus(navController: NavHostController,month: String,day:String,date:
         Column (modifier = Modifier
             .fillMaxWidth()
             .padding(top = 20.dp), horizontalAlignment = Alignment.CenterHorizontally){
-            Button(modifier = Modifier.padding(),
+            Button(
+                modifier = Modifier.padding(),
                 onClick = {
-                    if(scheduleName!=""&&estimatedTimeH!=null){
-                        navViewModel.tasklist.clear()
-                        todoEntitiesState.forEach {
-                            navViewModel.tasklist.add(Task(it.name, it.id, it.importance, it.completed, it.once, it.deadline, it.timeH))
+                    if (scheduleName.isNotEmpty() && estimatedTimeH.isNotEmpty() && importance.isNotEmpty()) {
+                        val importanceValue = importance.toIntOrNull()
+                        if (importanceValue != null && importanceValue in 0..9) {
+                            navViewModel.tasklist.clear()
+                            todoEntitiesState.forEach {
+                                navViewModel.tasklist.add(Task(it.name, it.id, it.importance, it.completed, it.once, it.deadline, it.timeH))
+                            }
+
+                            val task = Task(scheduleName, navViewModel.tasklist.size + 1, importance1, false, once, deadline, timeH)
+                            val todo = TodoEntity(scheduleName, navViewModel.tasklist.size + 1, importance1, false, once, deadline, timeH)
+
+                            navViewModel.tasklist.clear()
+
+                            GlobalScope.launch(Dispatchers.IO) {
+                                todoRepository.insert(todo)
+                            }
+                            Log.d("TaskAdded", "Task name: ${task.name}, ID: ${navViewModel.tasklist.size}, Importance: ${task.importance}, Completed: ${task.completed}, Once: ${task.once}, Deadline: ${task.deadline}, Time: ${task.time}")
+                            navController.navigate(Routes.Calendar.route)
+                        } else {
+                            importanceError = "중요도 : 0 ~ 9의 값을 입력해 주세요."
+                            val toast = Toast.makeText(context, importanceError, Toast.LENGTH_SHORT)
+                            toast.setGravity(android.view.Gravity.CENTER, 0, -200)
+                            toast.show()
                         }
-
-                        val task = Task(scheduleName, navViewModel.tasklist.size + 1, importance1, false, once,deadline,timeH)
-                        val todo = TodoEntity(scheduleName, navViewModel.tasklist.size + 1, importance1, false, once, deadline, timeH)
-
-                        navViewModel.tasklist.clear()
-
-                        // Task 정보를 로그에 출력
-
-                        GlobalScope.launch(Dispatchers.IO) {
-                            todoRepository.insert(todo)
-                        }
-                        Log.d("TaskAdded", "Task name: ${task.name}, ID: ${navViewModel.tasklist.size}, Importance: ${task.importance}, Completed: ${task.completed}, Once: ${task.once}, Deadline: ${task.deadline}, Time: ${task.time}")
-                        navController.navigate(Routes.Calendar.route)
+                    } else {
+                        val toast = Toast.makeText(context, "모든 값을 입력해 주세요.", Toast.LENGTH_SHORT)
+                        toast.setGravity(android.view.Gravity.CENTER, 0, -200)
+                        toast.show()
                     }
-                }) {1
+                }) {
                 Text(text = "추가하기")
             }
         }
