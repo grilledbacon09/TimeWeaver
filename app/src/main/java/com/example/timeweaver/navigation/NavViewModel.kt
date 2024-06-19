@@ -42,6 +42,9 @@ class NavViewModel(application: Application) : AndroidViewModel(application) {
     var freetimelist = mutableListOf<Freetime>()
 
     init {
+
+        val context = application.applicationContext
+
         val db = TodoDatabase.getItemDatabase(application.applicationContext)
         todoRepository = TodoRepository(db)
         Log.d("DatabaseLog", "TodoDatabase instance: $db")
