@@ -27,4 +27,7 @@ interface FixedDAO {
 
     @Query("SELECT * FROM FixedEntity WHERE itemId = :id")
     suspend fun getEntityById(id: Int): FixedEntity?
+
+    @Query("DELETE FROM FixedEntity")
+    fun deleteAll()
 }

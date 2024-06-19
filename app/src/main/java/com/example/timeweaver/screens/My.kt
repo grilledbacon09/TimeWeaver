@@ -43,6 +43,8 @@ import java.util.Date
 import java.util.Locale
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material3.Button
 //import androidx.compose.runtime.Composable
 //import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -56,12 +58,20 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.timeweaver.roomDB.FixedDatabase
+import com.example.timeweaver.roomDB.FixedEntity
+import com.example.timeweaver.roomDB.FixedRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 @Composable
 fun MyScreen(navController: NavHostController) {
     val context = LocalContext.current
     val database = TodoDatabase.getItemDatabase(context)
+    val FixedDB = FixedDatabase.getFixedDatabase(context)
     val todoRepository = TodoRepository(database)
+    val fixedRepository = FixedRepository(FixedDB)
     val navViewModel: NavViewModel = viewModel(LocalNavGraphViewModelStoreOwner.current)
 
     val todoEntities: LiveData<List<TodoEntity>> = todoRepository.getAll()
@@ -98,7 +108,8 @@ fun MyScreen(navController: NavHostController) {
             )
 
             Card(
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier
+                    .padding(bottom = 16.dp)
                     .fillMaxWidth(),
                 elevation = CardDefaults.cardElevation(
                     defaultElevation = 4.dp
@@ -106,7 +117,8 @@ fun MyScreen(navController: NavHostController) {
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(32.dp)
+                    modifier = Modifier
+                        .padding(32.dp)
                         .fillMaxWidth()
                         .scale(1f),
                     verticalArrangement = Arrangement.Center,
@@ -156,6 +168,16 @@ fun MyScreen(navController: NavHostController) {
                 fontWeight = FontWeight.Bold,
                 color = if (weeklyAchievement >= 50) Color.Green else Color.Red
             )
+
+            Spacer(modifier = Modifier.height(10.dp))
+            
+            Button(onClick = {
+                GlobalScope.launch(Dispatchers.IO) {
+                    fixedRepository.deleteAll()
+                }
+            }) {
+                Text(text = "고정 스케줄 초기화")
+            }
         }
     }
 }
