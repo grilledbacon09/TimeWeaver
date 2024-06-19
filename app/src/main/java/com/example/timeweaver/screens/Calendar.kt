@@ -162,6 +162,9 @@ fun ScheduleItem(
     var checked by remember {
         mutableStateOf(todoEntity.completed)
     }
+
+    if(checked != todoEntity.completed) checked = !checked
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(vertical = 8.dp)
